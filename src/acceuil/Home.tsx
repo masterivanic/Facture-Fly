@@ -56,12 +56,8 @@ export function Home() {
                     onChangeText={setSecteur}
                 />
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+            <TouchableOpacity onPress={() => navigation.navigate('UploadLogo')}>
                 <Text style={styles.finB}>Continuer</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity >
-                <Text style={styles.fin}>Retour</Text>
             </TouchableOpacity>
         </View>
     );
