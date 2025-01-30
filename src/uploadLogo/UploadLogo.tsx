@@ -45,11 +45,11 @@ export function UploadLogo() {
                 <Text style={styles.fin}>Télécharger</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate('HomeTabs')}>
+            <TouchableOpacity onPress={() => navigation.navigate('Bienvenu')}>
                 <Text style={styles.finB}>Continuer</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate('HomeTabs')}>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
                 <Text style={styles.finC}>Retour</Text>
             </TouchableOpacity>
         </View>

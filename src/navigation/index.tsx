@@ -40,8 +40,8 @@ const FactureTabs = () => {
     >
 
       <FactureTopTabs.Screen name="TOUTES" component={Factures} />
-      <FactureTopTabs.Screen name="PAYEES" component={UploadLogo} />
-      <FactureTopTabs.Screen name="NON PAYEES" component={Bienvenu} />
+      <FactureTopTabs.Screen name="PAYEES" component={Updates} />
+      <FactureTopTabs.Screen name="NON PAYEES" component={Updates} />
     </FactureTopTabs.Navigator>
   );
 };
@@ -123,6 +123,27 @@ const HomeTabs = createBottomTabNavigator({
 
 const RootStack = createNativeStackNavigator({
   screens: {
+    Home: {
+      screen: Home,
+      options: {
+        headerShown: false,
+        title: 'Home',
+      },
+    },
+    UploadLogo: {
+      screen: UploadLogo,
+      options: {
+        headerShown: false,
+        title: 'UploadLogo',
+      },
+    },
+    Bienvenu: {
+      screen: Bienvenu,
+      options: {
+        headerShown: false,
+        title: 'Bienvenu',
+      },
+    },
     HomeTabs: {
       screen: HomeTabs,
       options: {
