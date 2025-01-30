@@ -17,7 +17,7 @@ export function Home() {
         <View style={styles.container}>
             <View style={styles.container2}>
                 <Image
-                    source={require('../../assets/images/facture.png')}
+                    source={require('../assets/images/facture.png')}
                     style={styles.image}
                 />
             </View>

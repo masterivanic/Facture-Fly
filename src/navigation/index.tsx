@@ -22,6 +22,9 @@ import Nouvellefacture from './screens/NouvelleFacture';
 import { DefaultHeader, FactureCreationHeader } from './components/Headers';
 import AppercuFacture from './screens/AppercuFacture';
 import AppercuModelFacture from './screens/AppercuModelFacture';
+import { Home } from '../acceuil/Home';
+import { Bienvenu } from '../bienvenu/Bienvenu';
+import { UploadLogo } from '../uploadLogo/UploadLogo';
 
 
 
@@ -35,10 +38,10 @@ const FactureTabs = () => {
         tabBarStyle: { backgroundColor: '#00E5E5' }, // Background color
       }}
     >
-       
+
       <FactureTopTabs.Screen name="TOUTES" component={Factures} />
-      <FactureTopTabs.Screen name="PAYEES" component={Updates} />
-      <FactureTopTabs.Screen name="NON PAYEES" component={Updates} />
+      <FactureTopTabs.Screen name="PAYEES" component={UploadLogo} />
+      <FactureTopTabs.Screen name="NON PAYEES" component={Bienvenu} />
     </FactureTopTabs.Navigator>
   );
 };
@@ -54,7 +57,7 @@ const NouvelleFactureTabs = () => {
         swipeEnabled: false,
       }}
     >
-       
+
       <FactureTopTabs.Screen name="EDITION" component={Nouvellefacture} />
       <FactureTopTabs.Screen name={"apperçu".toUpperCase()} component={AppercuModelFacture} />
     </FactureTopTabs.Navigator>
@@ -65,7 +68,7 @@ const HomeTabs = createBottomTabNavigator({
   screenOptions: ({ route }) => ({
     tabBarStyle: {
       backgroundColor: '#00E5E5',
-      
+
       height: route.name == 'Nouveau' ? 0 : 60,
     },
     tabBarActiveTintColor: 'black',
@@ -77,12 +80,12 @@ const HomeTabs = createBottomTabNavigator({
       options: {
         header: ({ navigation, route }) => (
           <SafeAreaView>
-              <DefaultHeader
+            <DefaultHeader
               title={route.name}
               onSettingsPress={() => console.log('Settings Pressed')}
               onSearchPress={() => console.log('Search Pressed')}
             />
-        </SafeAreaView>
+          </SafeAreaView>
         ),
         title: 'Factures',
         tabBarIcon: ({ color, size }) => (
@@ -95,10 +98,10 @@ const HomeTabs = createBottomTabNavigator({
       options: {
         header: ({ navigation, route }) => (
           <SafeAreaView>
-              <FactureCreationHeader title="Facture"
+            <FactureCreationHeader title="Facture"
               onBackPress={() => navigation.goBack()}
-              onDotsPress={() => console.log('Search Pressed')}/> 
-        </SafeAreaView>
+              onDotsPress={() => console.log('Search Pressed')} />
+          </SafeAreaView>
         ),
         title: 'Nouveau',
         tabBarIcon: ({ color, size }) => (
@@ -123,9 +126,9 @@ const RootStack = createNativeStackNavigator({
     HomeTabs: {
       screen: HomeTabs,
       options: {
-        headerShown:false,
+        headerShown: false,
         title: 'Home',
-  
+
       },
     },
     Profile: {
@@ -169,6 +172,6 @@ type RootStackParamList = StaticParamList<typeof RootStack>;
 
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList {}
+    interface RootParamList extends RootStackParamList { }
   }
 }

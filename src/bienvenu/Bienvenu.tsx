@@ -10,7 +10,7 @@ export function Bienvenu() {
             <Text style={styles.milieu}>
                 Vous êtes prêt !{' '}
                 <Image
-                    source={require('../../assets/images/fete.png')}
+                    source={require('../assets/images/fete.png')}
                     style={styles.image}
                 />
             </Text>
