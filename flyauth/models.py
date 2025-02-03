@@ -23,7 +23,7 @@ class FlyUser(AbstractUser):
     )
     email = models.EmailField(_("email"), unique=True)
     confirm_number = models.CharField(_("confirm number"), max_length=1000, null=True)
-    disabled = models.BooleanField(_("is confirmed"), default=False)
+    disabled = models.BooleanField(_("is disabled"), default=False)
     roles = models.CharField(
         max_length=50,
         choices=UserRole.choices,

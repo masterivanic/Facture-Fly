@@ -60,7 +60,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = FlyUser
-        fields = ["id", "email", "username", "first_name", "last_name", "roles"]
+        fields = [
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "roles",
+            "disabled",
+        ]
         read_only_fields = ["id", "email"]
 
 
