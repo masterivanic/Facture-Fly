@@ -153,3 +153,5 @@ poetry.lock
 mp3_files/
 
 staticfiles/
+
+.pytest_cache
