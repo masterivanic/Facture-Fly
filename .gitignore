@@ -155,3 +155,6 @@ mp3_files/
 staticfiles/
 
 .pytest_cache
+
+
+facture-fly/
