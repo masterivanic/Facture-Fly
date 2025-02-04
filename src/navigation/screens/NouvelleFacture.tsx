@@ -3,6 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Status
 import Signature from 'react-native-signature-canvas';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import AntDesign from '@expo/vector-icons/AntDesign';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const NouvelleFacture = () => {
   const [invoiceNumber, setInvoiceNumber] = useState('INV0001');
@@ -17,23 +19,26 @@ const NouvelleFacture = () => {
   const [isSigning, setIsSigning] = useState(false);
 
   const calculateTotal = (item) => item.quantity * item.price;
-  
+
   const subtotal = items.reduce((sum, item) => sum + calculateTotal(item), 0);
   const totalTax = subtotal * (tax / 100);
   const total = subtotal - discount + totalTax;
   const balanceDue = total - payments;
 
   const addItem = () => {
-    setItems([...items, { 
-      id: items.length + 1, 
-      description: '', 
-      quantity: 0, 
-      price: 0 
+    setItems([...items, {
+      id: items.length + 1,
+      description: '',
+      quantity: 0,
+      price: 0
     }]);
   };
+  const removeItem = (id) => {
+    setItems(items.filter(item => id !== item.id))
+  }
 
   const updateItem = (id, field, value) => {
-    setItems(items.map(item => 
+    setItems(items.map(item =>
       item.id === id ? { ...item, [field]: Number(value) } : item
     ));
   };
@@ -47,14 +52,14 @@ const NouvelleFacture = () => {
     setSignature(null);
   };
   return (
-    <ScrollView 
-    scrollEnabled={!isSigning}
+    <ScrollView
+      scrollEnabled={!isSigning}
       keyboardShouldPersistTaps="handled"
-    style={styles.container}>
-        <StatusBar
-                     barStyle="dark-content" 
-                     backgroundColor="#00E5E5" 
-                   />
+      style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#00E5E5"
+      />
       {/* Header Section */}
       <View style={styles.header}>
         <Text style={styles.invoiceNumber}>{invoiceNumber}</Text>
@@ -63,6 +68,7 @@ const NouvelleFacture = () => {
       </View>
 
       {/* Date and Client Section */}
+      {/* TODO Add a date picker component */}
       <View style={styles.section}>
         <TextInput
           style={[styles.date, styles.boldText]}
@@ -81,46 +87,58 @@ const NouvelleFacture = () => {
       <View style={styles.table}>
         <View style={styles.tableHeader}>
           <Text style={styles.colDescription}>Description</Text>
-          <Text style={styles.colQuantity}>Qté</Text>
+          <Text style={styles.colQuantity}>Qantité</Text>
           <Text style={styles.colPrice}>Prix</Text>
           <Text style={styles.colTotal}>Total</Text>
         </View>
 
         {items.map((item) => (
-          <View key={item.id} style={styles.itemRow}>
-            <TextInput
-              style={styles.colDescription}
-              placeholder="Ajouter une description"
-              value={item.description}
-              onChangeText={(text) => updateItem(item.id, 'description', text)}
-            />
-            <View style={styles.colQuantity1}>
-              <TouchableOpacity 
-                onPress={() => updateItem(item.id, 'quantity', Math.max(0, item.quantity - 1))}
-                style={styles.quantityButton}
-              >
-                    <MaterialIcons name="highlight-remove" size={24} color="black" />              
-                </TouchableOpacity>
+          <View key={item.id}>
+            <TouchableOpacity
+              onPress={() => removeItem(item.id)}
+              style={styles.quantityButton}
+            >
+              <Ionicons name="remove-circle" size={24} color="black" />
+            </TouchableOpacity>
+            <View style={styles.itemRow}>
               <TextInput
-                style={styles.quantityInput}
-                keyboardType="numeric"
-                value={String(item.quantity)}
-                onChangeText={(text) => updateItem(item.id, 'quantity', text)}
+                style={styles.colDescription}
+                placeholder="Ajouter une description"
+                value={item.description}
+                onChangeText={(text) => updateItem(item.id, 'description', text)}
               />
-              <TouchableOpacity 
-                onPress={() => updateItem(item.id, 'quantity', item.quantity + 1)}
-                style={styles.quantityButton}
-              >
-                <Feather name="plus-circle" size={24} color="#4a90e2" />
-              </TouchableOpacity>
+              <View style={styles.colQuantity1}>
+                <TouchableOpacity
+                  onPress={() => updateItem(item.id, 'quantity', item.quantity + 1)}
+                  style={styles.quantityButton}
+                >
+                  <Feather name="plus-circle" size={24} color="#4a90e2" />
+                </TouchableOpacity>
+
+                <TextInput
+                  style={styles.quantityInput}
+                  keyboardType="numeric"
+                  value={String(item.quantity)}
+                  onChangeText={(text) => updateItem(item.id, 'quantity', text)}
+                />
+
+                <TouchableOpacity
+                  onPress={() => updateItem(item.id, 'quantity', Math.max(0, item.quantity - 1))}
+                  style={styles.quantityButton}
+                >
+                  <AntDesign name="minuscircleo" size={20} color="red" />
+                </TouchableOpacity>
+
+
+              </View>
+              <TextInput
+                style={styles.colPrice}
+                keyboardType="numeric"
+                value={String(item.price)}
+                onChangeText={(text) => updateItem(item.id, 'price', text)}
+              />
+              <Text style={styles.colTotal}>{calculateTotal(item).toFixed(2)}€</Text>
             </View>
-            <TextInput
-              style={styles.colPrice}
-              keyboardType="numeric"
-              value={String(item.price)}
-              onChangeText={(text) => updateItem(item.id, 'price', text)}
-            />
-            <Text style={styles.colTotal}>{calculateTotal(item).toFixed(2)}€</Text>
           </View>
         ))}
       </View>
@@ -133,14 +151,13 @@ const NouvelleFacture = () => {
 
       {/* Totals Section */}
       <View style={styles.totalsContainer}>
-        <View style={styles.totalRow}>
-          <Text style={styles.design}>Sous-total</Text>
-          <Text style={styles.design}>{subtotal.toFixed(2)}€</Text>
+        <View style={[styles.totalRow, styles.balanceDue, styles.change]}>
+          <Text >Sous-total</Text>
+          <Text >{subtotal.toFixed(2)}€</Text>
         </View>
         <View style={styles.totalRow}>
           <Text>Remise</Text>
           <TextInput
-            style={styles.discountInput}
             keyboardType="numeric"
             value={String(discount)}
             onChangeText={(text) => setDiscount(Number(text))}
@@ -149,28 +166,26 @@ const NouvelleFacture = () => {
         <View style={styles.totalRow}>
           <Text>Taxe</Text>
           <TextInput
-            style={styles.taxInput}
             keyboardType="numeric"
             value={String(tax)}
             onChangeText={(text) => setTax(Number(text))}
           />
         </View>
-        <View style={[styles.totalRow, styles.totalHighlight, styles.change]}>
-          <Text style={styles.boldText}>Total</Text>
-          <Text style={styles.boldText}>{total.toFixed(2)}€</Text>
+        <View style={[styles.totalRow, styles.balanceDue, styles.change]}>
+          <Text>Total</Text>
+          <Text>{total.toFixed(2)}€</Text>
         </View>
         <View style={styles.totalRow}>
           <Text>Paiements</Text>
           <TextInput
-            style={styles.paymentInput}
             keyboardType="numeric"
             value={String(payments)}
             onChangeText={(text) => setPayments(Number(text))}
           />
         </View>
         <View style={[styles.totalRow, styles.balanceDue, styles.change]}>
-          <Text style={styles.design}>Solde dû</Text>
-          <Text style={styles.design}>{balanceDue.toFixed(2)}€</Text>
+          <Text>Solde dû</Text>
+          <Text>{balanceDue.toFixed(2)}€</Text>
         </View>
       </View>
 
@@ -178,8 +193,8 @@ const NouvelleFacture = () => {
       <View style={styles.signatureContainer}>
         <Text style={styles.sectionTitle}>Signature</Text>
         <Signature
-        onBegin={() => setIsSigning(true)}
-        onEnd={() => setIsSigning(false)}
+          onBegin={() => setIsSigning(true)}
+          onEnd={() => setIsSigning(false)}
           ref={signatureRef}
           onOK={handleSignature}
           style={styles.signatureBox}
@@ -316,10 +331,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+
   },
   totalHighlight: {
     backgroundColor: '#f8f9fa',
-    padding: 10,
     borderRadius: 6,
   },
   balanceDue: {
@@ -354,14 +369,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 8,
     fontSize: 16,
-  },
-  design: {
-    backgroundColor: '#0C897B',
-    width: "100%",
-    color: "white",
-    paddingTop: 10,
-    paddingBottom: 10,
-  },
+  }
+
 });
 
 
