@@ -1,11 +1,12 @@
 from django.contrib.auth import get_user_model
 from django.contrib.auth import password_validation
-from django.utils.http import urlsafe_base64_decode as uid_decoder
+from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from flyauth.models import FlyUser
+from flyauth.models import UserCompany
 
 UserModel = get_user_model()
 
@@ -102,3 +103,18 @@ class UserChangePasswordSerializer(serializers.Serializer):
         user.set_password(password)
         user.save()
         return attrs
+
+
+class UserCompanySerializer(serializers.ModelSerializer):
+    phone = PhoneNumberField(region="FR")
+
+    class Meta:
+        model = UserCompany
+        exclude = ["user"]
+
+
+class UserCompanyDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserCompany
+        fields = "__all__"
+        read_only_fields = ["user", "id"]

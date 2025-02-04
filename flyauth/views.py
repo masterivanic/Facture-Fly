@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db.models import QuerySet
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -6,14 +7,20 @@ from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.serializers import Serializer
+from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.serializers import TokenBlacklistSerializer
 from rest_framework_simplejwt.views import TokenBlacklistView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from facture.permisssions import IsUserIsAuthenticatedAndAble
+from flyauth.models import UserCompany
 from flyauth.permissions import IsUserEnabled
 from flyauth.serializers import ObtainTokenSerializer
 from flyauth.serializers import UserChangePasswordSerializer
+from flyauth.serializers import UserCompanyDetailSerializer
+from flyauth.serializers import UserCompanySerializer
 from flyauth.serializers import UserProfileSerializer
 from flyauth.serializers import UserRegistrationSerializer
 from flyauth.serializers import UserSerializer
@@ -90,3 +97,23 @@ class FlyUserViewSet(viewsets.GenericViewSet):
         logout_view = TokenBlacklistView.as_view()
         response = logout_view(request._request)
         return response
+
+
+class UserCompanyViewSet(ModelViewSet):
+    permission_classes = (IsUserIsAuthenticatedAndAble,)
+    serializer_class = UserCompanySerializer
+
+    def perform_create(self, serializer: Serializer) -> None:
+        user = self.request.user
+        serializer.save(user=user)
+
+    def get_serializer_class(self):
+        if self.action in ("list", "retrieve"):
+            return UserCompanyDetailSerializer
+        return self.serializer_class
+
+    def get_queryset(self) -> QuerySet[UserCompany]:
+        queryset = UserCompany.objects.select_related("user")
+        if self.request.user.roles.__eq__("admin"):
+            return queryset.all()
+        return queryset.filter(user=self.request.user)

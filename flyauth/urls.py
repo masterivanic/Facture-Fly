@@ -6,9 +6,12 @@ from rest_framework_simplejwt.views import TokenVerifyView
 
 from flyauth.views import FlyUserViewSet
 from flyauth.views import ObtainTokenView
+from flyauth.views import UserCompanyViewSet
 
 router = DefaultRouter()
 router.register("", FlyUserViewSet, basename="users")
+router.register("company", UserCompanyViewSet, basename="users-company")
+
 
 urlpatterns = [
     path("login/", ObtainTokenView.as_view(), name="token"),
