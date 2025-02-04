@@ -25,6 +25,9 @@ import AppercuModelFacture from './screens/AppercuModelFacture';
 import { Home } from '../acceuil/Home';
 import { Bienvenu } from '../bienvenu/Bienvenu';
 import { UploadLogo } from '../uploadLogo/UploadLogo';
+import { Login } from '../login/Login';
+import { CreateAccount } from '../createAccount/CreateAccount';
+import { CreateHome } from '../createAccount/CreateHome';
 
 
 
@@ -123,6 +126,27 @@ const HomeTabs = createBottomTabNavigator({
 
 const RootStack = createNativeStackNavigator({
   screens: {
+    Login: {
+      screen: Login,
+      options: {
+        headerShown: false,
+        title: 'Login',
+      },
+    },
+    CreateAccount: {
+      screen: CreateAccount,
+      options: {
+        headerShown: false,
+        title: 'CreateAccount',
+      },
+    },
+    CreateHome: {
+      screen: CreateHome,
+      options: {
+        headerShown: false,
+        title: 'CreateHome',
+      },
+    },
     Home: {
       screen: Home,
       options: {
