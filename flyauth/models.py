@@ -1,4 +1,6 @@
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import Group
+from django.contrib.auth.models import Permission
 from django.contrib.auth.validators import ASCIIUsernameValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -70,3 +72,33 @@ class UserCompany(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Customer(AbstractUser):
+    groups = models.ManyToManyField(
+        Group,
+        related_name="customer_groups",
+        blank=True,
+        verbose_name=_("groups"),
+        help_text=_("The groups this user belongs to..."),
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        related_name="customer_user_permissions",
+        blank=True,
+        verbose_name=_("customers permissions"),
+        help_text=_("Specific permissions for this user..."),
+    )
+    user = models.ForeignKey(
+        FlyUser,
+        on_delete=models.CASCADE,
+        related_name="user_customer",
+        verbose_name=_("user"),
+        default=1,
+    )
+
+    class Meta:
+        verbose_name = _("Customer")
+
+    def __str__(self):
+        return self.email + " " + self.username

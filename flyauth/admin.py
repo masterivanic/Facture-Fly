@@ -1,8 +1,11 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+from rest_framework_simplejwt.token_blacklist.models import OutstandingToken
 
 from flyauth.forms import CompanyForm
+from flyauth.models import Customer
 from flyauth.models import FlyUser
 from flyauth.models import UserCompany
 
@@ -52,3 +55,15 @@ class UserCompanyAdmin(admin.ModelAdmin):
     list_filter = ("sector",)
     list_per_page = 50
     form = CompanyForm
+
+
+@admin.register(Customer)
+class CustomerAdmin(admin.ModelAdmin):
+    list_display = ("email", "username")
+    search_fields = ("first_name", "email")
+    list_per_page = 50
+
+
+admin.site.unregister(OutstandingToken)
+
+admin.site.unregister(BlacklistedToken)
