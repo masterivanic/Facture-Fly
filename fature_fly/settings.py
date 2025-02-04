@@ -14,7 +14,7 @@ SECRET_KEY = "django-insecure-4dv=w8+&n!xr=--)3ys(@gc$k!vu75&ah1a9wqmex@fnset0k!
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -124,7 +124,7 @@ AUTH_USER_MODEL = "flyauth.FlyUser"
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:8081",
 ]
-CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = ("http://localhost:8081",)
 
 
