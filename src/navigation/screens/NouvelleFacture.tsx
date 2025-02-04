@@ -94,7 +94,7 @@ const NouvelleFacture = () => {
               value={item.description}
               onChangeText={(text) => updateItem(item.id, 'description', text)}
             />
-            <View style={styles.colQuantity}>
+            <View style={styles.colQuantity1}>
               <TouchableOpacity 
                 onPress={() => updateItem(item.id, 'quantity', Math.max(0, item.quantity - 1))}
                 style={styles.quantityButton}
@@ -134,8 +134,8 @@ const NouvelleFacture = () => {
       {/* Totals Section */}
       <View style={styles.totalsContainer}>
         <View style={styles.totalRow}>
-          <Text>Sous-total</Text>
-          <Text>{subtotal.toFixed(2)}€</Text>
+          <Text style={styles.design}>Sous-total</Text>
+          <Text style={styles.design}>{subtotal.toFixed(2)}€</Text>
         </View>
         <View style={styles.totalRow}>
           <Text>Remise</Text>
@@ -155,7 +155,7 @@ const NouvelleFacture = () => {
             onChangeText={(text) => setTax(Number(text))}
           />
         </View>
-        <View style={[styles.totalRow, styles.totalHighlight]}>
+        <View style={[styles.totalRow, styles.totalHighlight, styles.change]}>
           <Text style={styles.boldText}>Total</Text>
           <Text style={styles.boldText}>{total.toFixed(2)}€</Text>
         </View>
@@ -168,9 +168,9 @@ const NouvelleFacture = () => {
             onChangeText={(text) => setPayments(Number(text))}
           />
         </View>
-        <View style={[styles.totalRow, styles.balanceDue]}>
-          <Text style={styles.boldText}>Solde dû</Text>
-          <Text style={styles.boldText}>{balanceDue.toFixed(2)}€</Text>
+        <View style={[styles.totalRow, styles.balanceDue, styles.change]}>
+          <Text style={styles.design}>Solde dû</Text>
+          <Text style={styles.design}>{balanceDue.toFixed(2)}€</Text>
         </View>
       </View>
 
@@ -204,6 +204,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     padding: 15,
+  },
+  change: {
+    backgroundColor: '#0C897B',
   },
   header: {
     borderBottomWidth: 2,
@@ -263,6 +266,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  colQuantity1: {
+    flex: 2,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    display: 'flex',
   },
   colPrice: {
     flex: 2,
@@ -344,6 +354,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 8,
     fontSize: 16,
+  },
+  design: {
+    backgroundColor: '#0C897B',
+    width: "100%",
+    color: "white",
+    paddingTop: 10,
+    paddingBottom: 10,
   },
 });
 
