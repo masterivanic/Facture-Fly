@@ -9,18 +9,16 @@ export function CreateHome() {
     const navigation = useNavigation();
 
     return (
-        <View style={styles.container}>
-             <View style={styles.container2}>
-                <Image
-                    source={require('../assets/images/facture.png')}
-                        style={styles.image}
-                />
-            </View>
-            <Text></Text>
-            <Text style={styles.secondaire}>Vous y êtes presque !</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Home')}>
-                <Text style={styles.finB}>Continuer</Text>
-            </TouchableOpacity>
+        <View style={styles.depart}>
+                   <View style={styles.depart2}>
+                       <Image
+                           source={require('../assets/images/facture.png')}
+                       />
+                   </View>
+                   <Text style={styles.depart3}>Vous y êtes presque !! let's go</Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+                        <Text style={styles.finB}>Continuer</Text>
+                    </TouchableOpacity>
         </View>
     );
 }

@@ -49,7 +49,7 @@ export const styles = StyleSheet.create({
         textAlign: 'center'
     },
     input: {
-        height: 30,
+        height: 50,
         borderColor: '#0C897B',
         borderWidth: 1,
         marginBottom: 8,
@@ -60,5 +60,21 @@ export const styles = StyleSheet.create({
         textAlign: 'center',
         height: '100%',
         marginTop: '50%'
-    }
+    },
+    dure: {
+        color: 'black'
+    },
+    depart: {
+        padding: 40
+    },
+    depart2: {
+        marginTop: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+        flex: 1
+    },
+    depart3: {
+        marginTop: 100,
+        textAlign: 'center'
+    },
 });

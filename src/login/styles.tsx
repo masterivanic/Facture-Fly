@@ -5,7 +5,7 @@ export const styles = StyleSheet.create({
         padding: 20,
     },
     container2: {
-        marginTop: 50,
+        marginTop: 100,
         justifyContent: 'center',
         alignItems: 'center',
         flex: 1
@@ -30,8 +30,8 @@ export const styles = StyleSheet.create({
         fontSize: 18
     },
     finB: {
-        marginTop: 50,
-        textAlign: 'center',
+        marginTop: 150,
+        textAlign: 'center', 
         borderStyle: 'solid',
         backgroundColor: '#0C897B',
         borderRadius: 10,
