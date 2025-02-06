@@ -5,7 +5,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from flyauth.models import FlyUser
+from flyauth.models import FlyUser, Customer
 from flyauth.models import UserCompany
 
 UserModel = get_user_model()
@@ -30,7 +30,10 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
-    password2 = serializers.CharField(style={"input_type": "password"}, write_only=True)
+    email = serializers.EmailField(required=True)
+    username = serializers.CharField(required=True)
+    password = serializers.CharField(write_only=True, required=True)
+    password2 = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = FlyUser
@@ -40,22 +43,38 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             "password",
             "password2",
         ]
-        read_only_fields = ["id", "password2"]
-        extra_kwargs = {"password": {"write_only": True}}
 
     def validate(self, attrs):
         password = attrs.get("password")
         password2 = attrs.get("password2")
         if password != password2:
             raise serializers.ValidationError(
-                "Password and Confirm Password doesn't match"
+                {"password": "Les mots de passe ne correspondent pas"}
             )
 
         try:
             password_validation.validate_password(password)
         except ValidationError as e:
-            raise serializers.ValidationError(e)
+            raise serializers.ValidationError({"password": list(e.messages)})
         return attrs
+
+    def create(self, validated_data):
+        # Remove password2 from the data as it's not needed for user creation
+        validated_data.pop("password2", None)
+        password = validated_data.pop("password", None)
+
+        # Create user instance
+        user = FlyUser.objects.create(
+            username=validated_data.get("username"),
+            email=validated_data.get("email"),
+        )
+
+        # Set password properly using set_password
+        if password:
+            user.set_password(password)
+            user.save()
+
+        return user
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -85,7 +104,7 @@ class UserChangePasswordSerializer(serializers.Serializer):
     )
 
     class Meta:
-        fields = ["password", "password2"]
+        fields = ["old_password", "new_password", "confirm_password"]
 
     def validate(self, attrs):
         old_password = attrs.get("old_password")
@@ -94,12 +113,22 @@ class UserChangePasswordSerializer(serializers.Serializer):
 
         user = self.context.get("user")
         if not user.check_password(old_password):
-            raise serializers.ValidationError("Old Password is not Correct")
+            raise serializers.ValidationError(
+                {"old_password": "Le mot de passe actuel est incorrect"}
+            )
 
         if password != password2:
             raise serializers.ValidationError(
-                "New Password and Confirm Password doesn't match"
+                {
+                    "new_password": "Le nouveau mot de passe et sa confirmation ne correspondent pas"
+                }
             )
+
+        try:
+            password_validation.validate_password(password)
+        except ValidationError as e:
+            raise serializers.ValidationError({"new_password": list(e.messages)})
+
         user.set_password(password)
         user.save()
         return attrs
@@ -118,3 +147,10 @@ class UserCompanyDetailSerializer(serializers.ModelSerializer):
         model = UserCompany
         fields = "__all__"
         read_only_fields = ["user", "id"]
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ["id", "username", "first_name", "last_name", "email", "user"]
+        read_only_fields = ["user"]

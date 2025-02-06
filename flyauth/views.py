@@ -13,6 +13,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.serializers import TokenBlacklistSerializer
 from rest_framework_simplejwt.views import TokenBlacklistView
 from rest_framework_simplejwt.views import TokenObtainPairView
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 
 from facture.permisssions import IsUserIsAuthenticatedAndAble
 from flyauth.models import UserCompany
@@ -26,10 +27,33 @@ from flyauth.serializers import UserRegistrationSerializer
 from flyauth.serializers import UserSerializer
 
 
+@extend_schema(tags=["Authentication"])
 class ObtainTokenView(TokenObtainPairView):
     serializer_class = ObtainTokenSerializer
 
 
+@extend_schema_view(
+    register=extend_schema(
+        summary="Inscription d'un nouvel utilisateur",
+        description="Permet de créer un nouveau compte utilisateur",
+        tags=["Authentication"],
+    ),
+    change_password=extend_schema(
+        summary="Changer le mot de passe",
+        description="Permet à l'utilisateur connecté de changer son mot de passe",
+        tags=["Authentication"],
+    ),
+    me=extend_schema(
+        summary="Profil utilisateur",
+        description="Retourne les informations du profil de l'utilisateur connecté",
+        tags=["Authentication"],
+    ),
+    logout=extend_schema(
+        summary="Déconnexion",
+        description="Déconnecte l'utilisateur en révoquant son token",
+        tags=["Authentication"],
+    ),
+)
 class FlyUserViewSet(viewsets.GenericViewSet):
     queryset = get_user_model().objects.all()
     serializer_class = UserSerializer
@@ -99,6 +123,38 @@ class FlyUserViewSet(viewsets.GenericViewSet):
         return response
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="Liste des entreprises",
+        description="Retourne la liste des entreprises de l'utilisateur",
+        tags=["Entreprises"],
+    ),
+    create=extend_schema(
+        summary="Créer une entreprise",
+        description="Crée une nouvelle entreprise pour l'utilisateur",
+        tags=["Entreprises"],
+    ),
+    retrieve=extend_schema(
+        summary="Détails d'une entreprise",
+        description="Retourne les détails d'une entreprise spécifique",
+        tags=["Entreprises"],
+    ),
+    update=extend_schema(
+        summary="Mettre à jour une entreprise",
+        description="Met à jour les informations d'une entreprise",
+        tags=["Entreprises"],
+    ),
+    partial_update=extend_schema(
+        summary="Mise à jour partielle d'une entreprise",
+        description="Met à jour partiellement les informations d'une entreprise",
+        tags=["Entreprises"],
+    ),
+    destroy=extend_schema(
+        summary="Supprimer une entreprise",
+        description="Supprime une entreprise",
+        tags=["Entreprises"],
+    ),
+)
 class UserCompanyViewSet(ModelViewSet):
     permission_classes = (IsUserIsAuthenticatedAndAble,)
     serializer_class = UserCompanySerializer

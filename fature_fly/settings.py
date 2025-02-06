@@ -163,10 +163,39 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Facture Fly API DOC",
-    "DESCRIPTION": "Facture Fly API DOCUMENTATION",
+    "TITLE": "API de Facturation",
+    "DESCRIPTION": """
+    API de gestion de factures et d'articles.
+    
+    Fonctionnalités principales:
+    * Gestion des articles
+    * Gestion des factures
+    * Génération de PDF
+    * Gestion des utilisateurs et entreprises
+    * Authentification sécurisée
+    """,
     "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "TAGS": [
+        {
+            "name": "Authentication",
+            "description": "Gestion de l'authentification (inscription, connexion, déconnexion, profil)",
+        },
+        {
+            "name": "Articles",
+            "description": "Gestion des articles et prestations",
+        },
+        {
+            "name": "Factures",
+            "description": "Gestion des factures et génération de PDF",
+        },
+        {
+            "name": "Entreprises",
+            "description": "Gestion des informations d'entreprise des utilisateurs",
+        },
+    ],
     "COMPONENT_SPLIT_REQUEST": True,
+    "SCHEMA_PATH_PREFIX": "/api/",
 }
 
 REST_FRAMEWORK = {
