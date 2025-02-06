@@ -31,3 +31,4 @@ sqlparse==0.5.3
 typing_extensions==4.12.2
 uritemplate==4.1.1
 virtualenv==20.29.1
+pyreportjasper
