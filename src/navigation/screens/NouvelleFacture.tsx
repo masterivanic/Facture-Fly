@@ -1,13 +1,31 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Platform } from 'react-native';
 import Signature from 'react-native-signature-canvas';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Invoice } from '../../interfaces';
+import { CustomDatePicker } from '../components/CustomDatePicker';
 
+const defaultInvoice: Invoice = {
+  id: 0,
+  label: 'INV0001',
+  emission_date: new Date(),
+  amount: 0,
+  discount: 0,
+  taxe: 0.2,
+  paid_amount: 0,
+  signature: '',
+  due_date: new Date(),
+  is_paid: false,
+  user: 0,
+  customer: 0,
+  created_at: new Date(),
+  updated_at: new Date()
+}
 const NouvelleFacture = () => {
-  const [invoiceNumber, setInvoiceNumber] = useState('INV0001');
+  const [invoiceLibelle, setInvoiceLibelle] = useState('INV0001');
   const [date, setDate] = useState('22/01/2025');
   const [client, setClient] = useState('Client');
   const [items, setItems] = useState([{ id: 1, description: '', quantity: 0, price: 0 }]);
@@ -62,7 +80,7 @@ const NouvelleFacture = () => {
       />
       {/* Header Section */}
       <View style={styles.header}>
-        <Text style={styles.invoiceNumber}>{invoiceNumber}</Text>
+        <Text style={styles.invoiceNumber}>{invoiceLibelle}</Text>
         <Text style={styles.headerTitle}>À payer des reception</Text>
         <Text style={styles.headerSubtitle}>Informations relatives à</Text>
       </View>
@@ -70,11 +88,7 @@ const NouvelleFacture = () => {
       {/* Date and Client Section */}
       {/* TODO Add a date picker component */}
       <View style={styles.section}>
-        <TextInput
-          style={[styles.date, styles.boldText]}
-          value={date}
-          onChangeText={setDate}
-        />
+        <CustomDatePicker/>
         <TextInput
           style={styles.clientInput}
           value={client}
@@ -213,6 +227,7 @@ const NouvelleFacture = () => {
     </ScrollView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
