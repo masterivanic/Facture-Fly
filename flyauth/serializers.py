@@ -40,7 +40,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             "password",
             "password2",
         ]
-        read_only_fields = ["id", "password2"]
+        # read_only_fields = ["id", "password2"]
         extra_kwargs = {"password": {"write_only": True}}
 
     def validate(self, attrs):
@@ -56,6 +56,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         except ValidationError as e:
             raise serializers.ValidationError(e)
         return attrs
+
+    def create(self, validated_data):
+        validated_data.pop("password2", None)
+        user = FlyUser.objects.create_user(
+            email=validated_data["email"],
+            username=validated_data["username"],
+            password=validated_data["password"],
+        )
+        return user
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
