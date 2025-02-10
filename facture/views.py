@@ -78,7 +78,7 @@ class InvoiceViewSet(ModelViewSet):
             "taxe": float(invoice.taxe),
             "paid_amount": float(invoice.paid_amount),
             "due_date": invoice.due_date,
-            "customer_name": invoice.customer.name,
+            "customer_name": invoice.customer.username,
             "articles": [
                 {
                     "article_label": article.label,
@@ -86,7 +86,7 @@ class InvoiceViewSet(ModelViewSet):
                     "article_price": float(article.price),
                     "article_description": article.description,
                 }
-                for article in invoice.article
+                for article in invoice.article.all()
             ],
         }
         REPORTS_DIR = Path(__file__).resolve().parent.parent / "jasper_template"

@@ -65,7 +65,7 @@
 
     <!-- Footer Section -->
     <pageFooter>
-        <band height="50">
+        <band height="70">
             <staticText>
                 <reportElement x="0" y="0" width="100" height="20"/>
                 <text><![CDATA[Total Amount:]]></text>
@@ -94,4 +94,5 @@
             </textField>
         </band>
     </pageFooter>
+
 </jasperReport>

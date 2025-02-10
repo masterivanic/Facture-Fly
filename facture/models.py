@@ -62,7 +62,7 @@ class Invoice(models.Model):
         related_name="customer_invoice_attributed",
     )
     article = models.ManyToManyField(
-        Article, related_name="invoice_article", verbose_name=_("article"), null=True
+        Article, related_name="invoice_article", verbose_name=_("article")
     )
     created_at = models.DateTimeField(_("created at"), default=timezone.now)
     updated_at = models.DateTimeField(_("updated at"), default=timezone.now)

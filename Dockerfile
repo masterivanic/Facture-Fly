@@ -7,6 +7,10 @@ RUN apt-get update && \
         apt-get clean && \
         rm -rf /var/lib/apt/lists/*
 
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64
+ENV PATH $PATH:$JAVA_HOME/bin
+RUN export JAVA_HOME
+
 ARG DJANGO_DEV_SERVER_PORT=8030
 ARG DJANGO_STATIC_ROOT=/var/www/static
 ARG DJANGO_MEDIA_ROOT=/var/www/media
