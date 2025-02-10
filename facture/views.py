@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import jpype
 from django.db.models import QuerySet
 from django.http import HttpResponse
 from pyreportjasper import PyReportJasper
@@ -70,14 +71,19 @@ class InvoiceViewSet(ModelViewSet):
     )
     def preview_invoice(self, request: Request, pk: int) -> HttpResponse:
         invoice = self.get_object()
+        jpype.startJVM()
+        java_util_Date = jpype.JClass("java.util.Date")
+        emission_date = java_util_Date(invoice.emission_date.timestamp() * 1000)
+        due_date = java_util_Date(invoice.due_date.timestamp() * 1000)
+
         data = {
             "label": invoice.label,
-            "emission_date": invoice.emission_date,
+            "emission_date": emission_date,
             "amount": float(invoice.amount),
             "discount": float(invoice.discount),
             "taxe": float(invoice.taxe),
             "paid_amount": float(invoice.paid_amount),
-            "due_date": invoice.due_date,
+            "due_date": due_date,
             "customer_name": invoice.customer.username,
             "articles": [
                 {
