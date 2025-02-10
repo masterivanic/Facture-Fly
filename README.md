@@ -56,7 +56,8 @@ This is a Django project designed to [briefly describe the purpose of your proje
 ### Step 6: Run Migrations
 
 
-### Step 7: Run the Server
+### Step 7: Run the Server Uusing docker
+``docker run -e DJANGO_DEV_SERVER_PORT=8030 -p 8030:8030 facture-fly``
 
 
 ## Usage

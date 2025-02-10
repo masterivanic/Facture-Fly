@@ -61,6 +61,9 @@ class Invoice(models.Model):
         null=True,
         related_name="customer_invoice_attributed",
     )
+    article = models.ManyToManyField(
+        Article, related_name="invoice_article", verbose_name=_("article"), null=True
+    )
     created_at = models.DateTimeField(_("created at"), default=timezone.now)
     updated_at = models.DateTimeField(_("updated at"), default=timezone.now)
 
@@ -69,4 +72,4 @@ class Invoice(models.Model):
         verbose_name_plural = _("Invoices")
 
     def __str__(self):
-        return self.label + " cost " + self.amount
+        return self.label + " cost " + str(self.amount)
