@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Button, SafeAreaView, Text } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
+import { formatDate } from '../../utils';
 
-export const CustomDatePicker = () => {
-    const [date, setDate] = useState(new Date(1598051730000));
+export const CustomDatePicker = ({date, setDate}) => {
+
     const [show, setShow] = useState(false);
   
     const onChange = (event, selectedDate) => {
@@ -19,7 +20,7 @@ export const CustomDatePicker = () => {
     return (
       <SafeAreaView>
         
-        <Text onPress={showDatepicker}>selected: {date.toLocaleString()}</Text>
+        <Text onPress={showDatepicker}>{formatDate(date)}</Text>
         {show && (
           <DateTimePicker
             testID="dateTimePicker"

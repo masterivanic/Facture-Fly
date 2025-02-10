@@ -3,6 +3,7 @@ import { HeaderButton, Text } from '@react-navigation/elements';
 import {
   createStaticNavigation,
   StaticParamList,
+  useRoute,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Image, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -28,7 +29,8 @@ import { UploadLogo } from '../uploadLogo/UploadLogo';
 import { Login } from '../login/Login';
 import { CreateAccount } from '../createAccount/CreateAccount';
 import { CreateHome } from '../createAccount/CreateHome';
-
+import ClientsScreen from './screens/clients/ClientsScreen';
+import ClientDetailScreen from './screens/clients/ClientDetailScreen';
 
 
 const FactureTopTabs = createMaterialTopTabNavigator();
@@ -50,7 +52,9 @@ const FactureTabs = () => {
 };
 
 const NouvelleFactureTopTabs = createMaterialTopTabNavigator();
-const NouvelleFactureTabs = () => {
+const NouvelleFactureTabs = ({route}) => {
+  // Get the passed params
+  const id = route.params?.id;  // Extract params
   return (
     <FactureTopTabs.Navigator
       screenOptions={{
@@ -61,7 +65,7 @@ const NouvelleFactureTabs = () => {
       }}
     >
 
-      <FactureTopTabs.Screen name="EDITION" component={Nouvellefacture} />
+      <FactureTopTabs.Screen name="EDITION" component={Nouvellefacture}  initialParams={{ id }}/>
       <FactureTopTabs.Screen name={"apperçu".toUpperCase()} component={AppercuModelFacture} />
     </FactureTopTabs.Navigator>
   );
@@ -124,8 +128,18 @@ const HomeTabs = createBottomTabNavigator({
   },
 });
 
+const Stack = createNativeStackNavigator();
+const ClientsStackScreen = () => {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="Clients" component={ClientsScreen} />
+      <Stack.Screen name="ClientDetail" component={ClientDetailScreen} />
+    </Stack.Navigator>
+  );
+}
 const RootStack = createNativeStackNavigator({
   screens: {
+    
     Login: {
       screen: Login,
       options: {
@@ -174,6 +188,13 @@ const RootStack = createNativeStackNavigator({
         headerShown: false,
         title: 'Home',
 
+      },
+    },
+    ClientsStack: {
+      screen: ClientsStackScreen,
+      options: {
+        headerShown: false,
+        title: 'Clients',
       },
     },
     Profile: {

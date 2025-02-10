@@ -53,10 +53,8 @@ export interface FlyUser {
     taxe: number;
     paid_amount: number;
     signature: string | null;
-    due_date: Date | null;
+    due_date: Date ;
     is_paid: boolean;
     user: number; // Reference to FlyUser ID
     customer: number | null; // Reference to Customer ID (nullable)
-    created_at: Date;
-    updated_at: Date;
   }
