@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from pathlib import Path
 
 import jpype
@@ -73,8 +74,9 @@ class InvoiceViewSet(ModelViewSet):
         invoice = self.get_object()
         jpype.startJVM()
         java_util_Date = jpype.JClass("java.util.Date")
-        emission_date = java_util_Date(invoice.emission_date.timestamp() * 1000)
-        due_date = java_util_Date(invoice.due_date.timestamp() * 1000)
+        emission_date = java_util_Date(int(invoice.emission_date.timestamp() * 1000))
+        due_date_datetime = datetime.combine(invoice.due_date, datetime.min.time())
+        due_date = java_util_Date(int(due_date_datetime.timestamp() * 1000))
 
         data = {
             "label": invoice.label,
@@ -99,18 +101,21 @@ class InvoiceViewSet(ModelViewSet):
         input_file = os.path.join(REPORTS_DIR, "invoice.jrxml")
         output_file = os.path.join(REPORTS_DIR, "invoice_{invoice.label}.pdf")
 
-        pyreportjasper = PyReportJasper()
-        pyreportjasper.config(
-            input_file, output_file, parameters=data, output_formats=["pdf", "rtf"]
-        )
-        pyreportjasper.compile(write_jasper=True)
-        pyreportjasper.process_report()
-        with open(output_file, "rb") as pdf_file:
-            response = HttpResponse(pdf_file.read(), content_type="application/pdf")
-            response[
-                "Content-Disposition"
-            ] = 'attachment; filename="invoice_{invoice.label}.pdf"'
-            return response
+        try:
+            pyreportjasper = PyReportJasper()
+            pyreportjasper.config(
+                input_file, output_file, parameters=data, output_formats=["pdf"]
+            )
+            # pyreportjasper.compile(write_jasper=True)
+            pyreportjasper.process_report()
+            with open(output_file, "rb") as pdf_file:
+                response = HttpResponse(pdf_file.read(), content_type="application/pdf")
+                response[
+                    "Content-Disposition"
+                ] = f'attachment; filename="invoice_{invoice.label}.pdf"'
+                return response
+        except Exception as e:
+            return HttpResponse(f"Error generating report: {e}", status=500)
 
     @action(
         detail=False,

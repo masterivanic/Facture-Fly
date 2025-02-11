@@ -75,20 +75,14 @@ class UserCompany(models.Model):
 
 
 class Customer(AbstractUser):
-    groups = models.ManyToManyField(
-        Group,
-        related_name="customer_groups",
-        blank=True,
-        verbose_name=_("groups"),
-        help_text=_("The groups this user belongs to..."),
-    )
-    user_permissions = models.ManyToManyField(
-        Permission,
-        related_name="customer_user_permissions",
-        blank=True,
-        verbose_name=_("customers permissions"),
-        help_text=_("Specific permissions for this user..."),
-    )
+    groups = None
+    user_permissions = None
+    password = None
+    is_staff = None
+    is_active = None
+    is_superuser = None
+    last_login = None
+    adress = models.CharField(_("customer adress"), max_length=152, blank=True)
     user = models.ForeignKey(
         FlyUser,
         on_delete=models.CASCADE,

@@ -5,6 +5,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from flyauth.models import Customer
 from flyauth.models import FlyUser
 from flyauth.models import UserCompany
 
@@ -127,3 +128,16 @@ class UserCompanyDetailSerializer(serializers.ModelSerializer):
         model = UserCompany
         fields = "__all__"
         read_only_fields = ["user", "id"]
+
+
+class CustomerDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = "__all__"
+        read_only_fields = ["user", "id"]
+
+
+class CustomerCreateOrUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        exclude = ("date_joined",)
