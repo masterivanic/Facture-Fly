@@ -123,11 +123,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "flyauth.FlyUser"
 
 CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:8081"  
+    "http://127.0.0.1:8081",
+    "https://srrkx1jf-8080.uks1.devtunnels.ms",  
 ]
+
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = ("*")
-
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=180),

@@ -49,8 +49,8 @@ class InvoiceCreateUpdateSerializer(serializers.ModelSerializer):
             )
 
         # Validate paid amount is not greater than total amount after tax and discount
-        total_after_discount = amount - discount
-        total_with_tax = total_after_discount + (total_after_discount * taxe / 100)
+        total_after_discount = amount * (1 - discount / 100)
+        total_with_tax = total_after_discount * (1 + taxe / 100)
         if paid_amount > total_with_tax:
             raise serializers.ValidationError(
                 {"paid_amount": "Paid amount cannot exceed total invoice amount"}
@@ -90,9 +90,9 @@ class InvoiceDetailSerializer(serializers.ModelSerializer):
         tax = float(obj.taxe)
 
         # Apply discount
-        amount_after_discount = amount - discount
+        amount_after_discount = amount * (1 - discount/100)
         # Apply tax
-        final_amount = amount_after_discount + (amount_after_discount * tax / 100)
+        final_amount = amount_after_discount + (1 +  tax / 100)
 
         return round(final_amount, 2)
 
