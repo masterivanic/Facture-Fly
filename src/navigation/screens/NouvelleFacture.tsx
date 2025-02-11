@@ -222,19 +222,25 @@ const NouvelleFacture = ({route}) => {
         </View>
         <View style={styles.totalRow}>
           <Text>Remise</Text>
-          <TextInput
-            keyboardType="numeric"
-            value={String(discount)}
-            onChangeText={(text) => setDiscount(Number(text))}
-          />
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <TextInput
+              keyboardType="numeric"
+              value={String(discount)}
+              onChangeText={(text) => setDiscount(Number(text))}
+            />
+            <Text>%</Text>
+          </View>
         </View>
         <View style={styles.totalRow}>
           <Text>Taxe</Text>
-          <TextInput
-            keyboardType="numeric"
-            value={String(tax)}
-            onChangeText={(text) => setTax(Number(text))}
-          />
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <TextInput
+              keyboardType="numeric"
+              value={String(tax)}
+              onChangeText={(text) => setTax(Number(text))}
+            />
+            <Text>%</Text>
+          </View>
         </View>
         <View style={[styles.totalRow, styles.balanceDue, styles.change]}>
           <Text>Total</Text>

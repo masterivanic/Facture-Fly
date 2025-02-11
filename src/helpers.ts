@@ -5,7 +5,7 @@ export const transformInvoices = (apiInvoices: any[]): MonthlyInvoices[] => {
   
     apiInvoices.forEach((invoice) => {
       const monthName = new Date(invoice.emission_date).toLocaleString("fr-FR", { month: "long" });
-  
+        //TODO: add get customer(client) api call
       const formattedInvoice: InvoiceDisplayed = {
         client: invoice.customer?.name || "Aucun client",
         invoiceNumber: `INV${invoice.id.toString().padStart(4, "0")}`,
