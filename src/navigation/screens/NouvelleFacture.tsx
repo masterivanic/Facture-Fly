@@ -1,16 +1,48 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Platform } from 'react-native';
 import Signature from 'react-native-signature-canvas';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Invoice, Customer, Article } from '../../interfaces';
+import { CustomDatePicker } from '../components/CustomDatePicker';
+import { useNavigation } from '@react-navigation/native';
+import { getClient } from '../../api/client';
 
-const NouvelleFacture = () => {
-  const [invoiceNumber, setInvoiceNumber] = useState('INV0001');
-  const [date, setDate] = useState('22/01/2025');
-  const [client, setClient] = useState('Client');
-  const [items, setItems] = useState([{ id: 1, description: '', quantity: 0, price: 0 }]);
+const defaultInvoice: Invoice = {
+  id: 0,
+  label: 'INV0001',
+  emission_date: new Date(),
+  amount: 0,
+  discount: 0,
+  taxe: 0.2,
+  paid_amount: 0,
+  signature: '',
+  due_date: new Date(),
+  is_paid: false,
+  user: 1,
+  customer: 2,
+}
+
+
+const NouvelleFacture = ({route}) => {
+  const {  clientId } = route.params || {};
+  useEffect(() => {
+    if(clientId != null) {
+      const client = getClient(clientId);
+      if (client) {  
+        setCustomer(client);
+      } 
+    }
+  }, [clientId]);
+  console.log("from Nouvelle Facture", clientId); 
+
+  const [invoiceLibelle, setInvoiceLibelle] = useState(defaultInvoice.label);
+  const [emissionDate, setEmissionDate] = useState(defaultInvoice.emission_date);
+  const [dueDate, setDueDate] = useState(defaultInvoice.due_date);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [items, setItems] = useState<Article[]>([]);
   const [discount, setDiscount] = useState(0);
   const [tax, setTax] = useState(0);
   const [payments, setPayments] = useState(0);
@@ -28,9 +60,12 @@ const NouvelleFacture = () => {
   const addItem = () => {
     setItems([...items, {
       id: items.length + 1,
-      description: '',
+      label: '',
       quantity: 0,
-      price: 0
+      price: 0,
+      description: '',
+      user: 1,
+      facture: 1
     }]);
   };
   const removeItem = (id) => {
@@ -51,6 +86,30 @@ const NouvelleFacture = () => {
     signatureRef.current.clearSignature();
     setSignature(null);
   };
+  const [apayer_str, setApayerStr] = useState('');
+  const updateApayerStr = () => {
+    if (dueDate.getTime() == emissionDate.getTime()) {
+      setApayerStr('À payer dés la récéption');
+    }else if(dueDate.getTime() > new Date().getTime()) {
+      const differenceInDays = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      setApayerStr(`À payer dans ${differenceInDays} jours`);
+    }else {
+      setApayerStr('Facture en retard');
+    }
+  }
+  useEffect(() => {
+    updateApayerStr();
+  }, [dueDate, emissionDate]);
+  const navigation = useNavigation();
+
+  const handleCustomeSelection = () => {
+    if(customer != null) {
+      navigation.navigate('ClientsStack', {screen: 'ClientDetail'});
+    }else {
+      navigation.navigate('ClientsStack', {screen: 'Clients', params: {id:2}});
+    }
+  }
+
   return (
     <ScrollView
       scrollEnabled={!isSigning}
@@ -62,31 +121,37 @@ const NouvelleFacture = () => {
       />
       {/* Header Section */}
       <View style={styles.header}>
-        <Text style={styles.invoiceNumber}>{invoiceNumber}</Text>
-        <Text style={styles.headerTitle}>À payer des reception</Text>
-        <Text style={styles.headerSubtitle}>Informations relatives à</Text>
+        <TextInput
+          style={styles.invoiceNumber}
+          value={invoiceLibelle}
+          onChangeText={setInvoiceLibelle}
+          placeholder="Libellé de la facture"
+        />
+        <Text style={styles.apayer}>{apayer_str}</Text>
+      </View>
+      <View style={styles.section}>
+        <Text style={{fontWeight: '500', fontSize: 16}}>Date D'émission</Text>
+        <CustomDatePicker date={emissionDate} setDate={setEmissionDate} />
+      </View>
+      {/* Due Date Section */}
+      <View style={styles.section}>
+        <Text style={{fontWeight: '500', fontSize: 16}}>Date D'échéance</Text>
+        <CustomDatePicker date={dueDate} setDate={setDueDate} />
       </View>
 
       {/* Date and Client Section */}
       {/* TODO Add a date picker component */}
       <View style={styles.section}>
-        <TextInput
-          style={[styles.date, styles.boldText]}
-          value={date}
-          onChangeText={setDate}
-        />
-        <TextInput
-          style={styles.clientInput}
-          value={client}
-          onChangeText={setClient}
-          placeholder="Client"
-        />
+      <Text style={{fontWeight: '500', fontSize: 16}}>Client</Text>
+        <TouchableOpacity onPress={handleCustomeSelection}>
+          {customer == null ? <Text>Sélectionner un client</Text> : <Text>{customer?.first_name} {customer?.last_name}</Text>}
+        </TouchableOpacity>
       </View>
 
       {/* Items Table */}
       <View style={styles.table}>
         <View style={styles.tableHeader}>
-          <Text style={styles.colDescription}>Description</Text>
+          <Text style={styles.colDescription}>Libellé</Text>
           <Text style={styles.colQuantity}>Qantité</Text>
           <Text style={styles.colPrice}>Prix</Text>
           <Text style={styles.colTotal}>Total</Text>
@@ -103,9 +168,9 @@ const NouvelleFacture = () => {
             <View style={styles.itemRow}>
               <TextInput
                 style={styles.colDescription}
-                placeholder="Ajouter une description"
-                value={item.description}
-                onChangeText={(text) => updateItem(item.id, 'description', text)}
+                placeholder="Ajouter un libellé"
+                value={item.label}
+                onChangeText={(text) => updateItem(item.id, 'label', text)}
               />
               <View style={styles.colQuantity1}>
                 <TouchableOpacity
@@ -157,19 +222,25 @@ const NouvelleFacture = () => {
         </View>
         <View style={styles.totalRow}>
           <Text>Remise</Text>
-          <TextInput
-            keyboardType="numeric"
-            value={String(discount)}
-            onChangeText={(text) => setDiscount(Number(text))}
-          />
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <TextInput
+              keyboardType="numeric"
+              value={String(discount)}
+              onChangeText={(text) => setDiscount(Number(text))}
+            />
+            <Text>%</Text>
+          </View>
         </View>
         <View style={styles.totalRow}>
           <Text>Taxe</Text>
-          <TextInput
-            keyboardType="numeric"
-            value={String(tax)}
-            onChangeText={(text) => setTax(Number(text))}
-          />
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <TextInput
+              keyboardType="numeric"
+              value={String(tax)}
+              onChangeText={(text) => setTax(Number(text))}
+            />
+            <Text>%</Text>
+          </View>
         </View>
         <View style={[styles.totalRow, styles.balanceDue, styles.change]}>
           <Text>Total</Text>
@@ -214,6 +285,7 @@ const NouvelleFacture = () => {
   );
 };
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -227,27 +299,33 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: '#e0e0e0',
     paddingBottom: 15,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   invoiceNumber: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#2c3e50',
   },
-  headerTitle: {
-    fontSize: 16,
-    color: '#7f8c8d',
-    marginTop: 5,
+  apayer: {
+    alignSelf: 'flex-start',
+    padding: 10,
+    fontSize: 13,
+    color: 'white',
+    backgroundColor: '#0C897B',
+    borderRadius: 5,
   },
   headerSubtitle: {
     fontSize: 14,
     color: '#95a5a6',
   },
   section: {
+    flexDirection: 'row',
+    alignItems: 'center', 
     backgroundColor: '#f8f9fa',
     borderRadius: 8,
     padding: 15,
-    marginBottom: 20,
+    marginBottom: 8,
+    gap: 10,
   },
   boldText: {
     fontWeight: 'bold',

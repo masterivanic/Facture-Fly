@@ -1,42 +1,33 @@
 import { Button, Text } from '@react-navigation/elements';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, StatusBar, StyleSheet, View } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { globalStyles } from '../../styles/global';
+import { transformInvoices } from '../../helpers';
+import axios from "axios";
+import getInvoices from '../../api/invoice';
+import { InvoiceDisplayed, MonthlyInvoices } from '../../interfaces';
 
-type Invoice = {
-  client: string;
-  invoiceNumber: string;
-  amount: string;
-};
 
-type MonthlyInvoices = {
-  month: string;
-  total: string;
-  data: Invoice[];
-};
-
-const invoices = [
-  {
-    month: 'Janvier',
-    total: '0,00€',
-    data: [
-      { client: 'Aucun client', invoiceNumber: 'INV0001', amount: '0,00€' },
-      { client: 'Aucun client', invoiceNumber: 'INV0002', amount: '0,00€' },
-    ],
-  },
-  {
-    month: 'Février',
-    total: '0,00€',
-    data: [
-      { client: 'Aucun client', invoiceNumber: 'INV0003', amount: '0,00€' },
-      { client: 'Aucun client', invoiceNumber: 'INV0004', amount: '0,00€' },
-    ],
-  },
-];
 
 export function Factures() {
-  const [factures, setFactures] = useState(invoices)
+  const [factures, setFactures] = useState<MonthlyInvoices[]>([]);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  const fetchInvoices = async () => {
+    try {
+      const results = await getInvoices();
+      if (results) {
+        const transformedData = transformInvoices(results);
+        setFactures(transformedData);
+      }
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+    }
+  };
   return (
     <View style={styles.container}>
      <StatusBar
@@ -59,7 +50,7 @@ export function Factures() {
   );
 }
 const FacturesList = ({invoices}:{invoices: MonthlyInvoices[]})=>{
-  const renderInvoice = ({ item }:{item:Invoice}) => (
+  const renderInvoice = ({ item }:{item:InvoiceDisplayed}) => (
     <View style={globalStyles.invoiceCard}>
       <Text style={globalStyles.clientText}>{item.client}</Text>
       <Text style={globalStyles.amountText}>{item.amount}</Text>
