@@ -1,12 +1,13 @@
 import { Button, Text } from '@react-navigation/elements';
 import { useEffect, useState } from 'react';
-import { FlatList, StatusBar, StyleSheet, View } from 'react-native';
+import { FlatList, StatusBar, StyleSheet, View, TouchableOpacity } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { globalStyles } from '../../styles/global';
-import { transformInvoices } from '../../helpers';
+import { formatCurrency, transformInvoices } from '../../helpers';
 import axios from "axios";
 import getInvoices from '../../api/invoice';
 import { InvoiceDisplayed, MonthlyInvoices } from '../../interfaces';
+import { useNavigation } from '@react-navigation/native';
 
 
 
@@ -50,19 +51,23 @@ export function Factures() {
   );
 }
 const FacturesList = ({invoices}:{invoices: MonthlyInvoices[]})=>{
+  const navigation = useNavigation();
+  const handleInvoicePress = (item:InvoiceDisplayed) => {
+    navigation.navigate('HomeTabs', { screen: 'Nouveau', params: { factureId: item.id } })
+  }
   const renderInvoice = ({ item }:{item:InvoiceDisplayed}) => (
-    <View style={globalStyles.invoiceCard}>
+    <TouchableOpacity style={globalStyles.invoiceCard} onPress={()=>handleInvoicePress(item)}>
       <Text style={globalStyles.clientText}>{item.client}</Text>
-      <Text style={globalStyles.amountText}>{item.amount}</Text>
+      <Text style={globalStyles.amountText}>{formatCurrency(item.amount)}</Text>
       <Text style={globalStyles.invoiceNumber}>{item.invoiceNumber}</Text>
-    </View>
+    </TouchableOpacity>
   );
   const renderSection = ({ item }:{item:MonthlyInvoices}) => (
     <View style={globalStyles.sectionContainer}>
       {/* Month Header */}
       <View style={globalStyles.sectionHeader}>
         <Text style={globalStyles.monthText}>{item.month}</Text>
-        <Text style={globalStyles.totalText}>{item.total}</Text>
+        <Text style={globalStyles.totalText}>{formatCurrency(item.total)}</Text>
       </View>
 
       {/* Invoice List */}
