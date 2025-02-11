@@ -59,3 +59,15 @@ export interface FlyUser {
     user: number; // Reference to FlyUser ID
     customer: number | null; // Reference to Customer ID (nullable)
   }
+
+  export interface InvoiceDisplayed {
+    client: string;
+    invoiceNumber: string;
+    amount: string;
+  };
+  
+  export interface MonthlyInvoices  {
+    month: string;
+    total: string;
+    data: InvoiceDisplayed[];
+  };

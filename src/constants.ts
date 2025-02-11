@@ -1,1 +1,2 @@
-export const SERVER_URL="http://localhost:8080/"
+export const API_URL="https://srrkx1jf-8080.uks1.devtunnels.ms/api"
+export const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM5MjQ3MjM5LCJpYXQiOjE3MzkyMzY0MzksImp0aSI6Ijg1YzNjMGRjYTVjZjQ5Y2U5ZTZlM2RkODM4MDZiZDk3IiwidXNlcl9pZCI6MX0.FgENdych11q5X3t8pq-cHOm1vRlvHCWHz_iQFokIeUY"
