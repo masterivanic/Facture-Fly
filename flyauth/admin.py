@@ -8,6 +8,9 @@ from flyauth.forms import CompanyForm
 from flyauth.models import Customer
 from flyauth.models import FlyUser
 from flyauth.models import UserCompany
+from utils.export import ExportCsvMixin
+
+export_call = ExportCsvMixin.export_as_csv
 
 
 @admin.register(FlyUser)
@@ -55,6 +58,7 @@ class UserCompanyAdmin(admin.ModelAdmin):
     list_filter = ("sector",)
     list_per_page = 50
     form = CompanyForm
+    actions = [export_call]
 
 
 @admin.register(Customer)
@@ -62,6 +66,7 @@ class CustomerAdmin(admin.ModelAdmin):
     list_display = ("email", "username")
     search_fields = ("first_name", "email")
     list_per_page = 50
+    actions = [export_call]
 
 
 admin.site.unregister(OutstandingToken)

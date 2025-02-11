@@ -32,4 +32,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 EXPOSE $DJANGO_DEV_SERVER_PORT
-CMD ["sh", "-c", "python manage.py makemigrations && python manage.py migrate && python manage.py createsuperuser --noinput && python manage.py runserver 0.0.0.0:$DJANGO_DEV_SERVER_PORT"]
+CMD ["sh", "-c", "python manage.py makemigrations && python manage.py migrate && python manage.py createsuperuser --noinput && python manage.py fake_init &&  && python manage.py runserver 0.0.0.0:$DJANGO_DEV_SERVER_PORT"]
