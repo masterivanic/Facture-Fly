@@ -5,9 +5,10 @@ import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Invoice, Customer } from '../../interfaces';
+import { Invoice, Customer, Article } from '../../interfaces';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 import { useNavigation } from '@react-navigation/native';
+import { getClient } from '../../api/client';
 
 const defaultInvoice: Invoice = {
   id: 0,
@@ -23,29 +24,25 @@ const defaultInvoice: Invoice = {
   user: 1,
   customer: 2,
 }
-const defaultCustomer: Customer = {
-  id: 2,
-  username: 'Client',
-  first_name: 'Client',
-  last_name: 'Client',
-  email: 'client@example.com',
-  is_staff: false,
-  is_active: true,
-  date_joined: new Date(),
-  groups: [],
-  user_permissions: [],
-  user: 1,
-}
+
 
 const NouvelleFacture = ({route}) => {
-  const {  id } = route.params || {};
-  console.log("from Nouvelle Facture", id); 
+  const {  clientId } = route.params || {};
+  useEffect(() => {
+    if(clientId != null) {
+      const client = getClient(clientId);
+      if (client) {  
+        setCustomer(client);
+      } 
+    }
+  }, [clientId]);
+  console.log("from Nouvelle Facture", clientId); 
 
   const [invoiceLibelle, setInvoiceLibelle] = useState(defaultInvoice.label);
   const [emissionDate, setEmissionDate] = useState(defaultInvoice.emission_date);
   const [dueDate, setDueDate] = useState(defaultInvoice.due_date);
-  const [customer, setCustomer] = useState(null);
-  const [items, setItems] = useState([{ id: 1, description: '', quantity: 0, price: 0 }]);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [items, setItems] = useState<Article[]>([]);
   const [discount, setDiscount] = useState(0);
   const [tax, setTax] = useState(0);
   const [payments, setPayments] = useState(0);
@@ -63,9 +60,12 @@ const NouvelleFacture = ({route}) => {
   const addItem = () => {
     setItems([...items, {
       id: items.length + 1,
-      description: '',
+      label: '',
       quantity: 0,
-      price: 0
+      price: 0,
+      description: '',
+      user: 1,
+      facture: 1
     }]);
   };
   const removeItem = (id) => {
@@ -151,7 +151,7 @@ const NouvelleFacture = ({route}) => {
       {/* Items Table */}
       <View style={styles.table}>
         <View style={styles.tableHeader}>
-          <Text style={styles.colDescription}>Description</Text>
+          <Text style={styles.colDescription}>Libellé</Text>
           <Text style={styles.colQuantity}>Qantité</Text>
           <Text style={styles.colPrice}>Prix</Text>
           <Text style={styles.colTotal}>Total</Text>
@@ -168,9 +168,9 @@ const NouvelleFacture = ({route}) => {
             <View style={styles.itemRow}>
               <TextInput
                 style={styles.colDescription}
-                placeholder="Ajouter une description"
-                value={item.description}
-                onChangeText={(text) => updateItem(item.id, 'description', text)}
+                placeholder="Ajouter un libellé"
+                value={item.label}
+                onChangeText={(text) => updateItem(item.id, 'label', text)}
               />
               <View style={styles.colQuantity1}>
                 <TouchableOpacity

@@ -8,24 +8,12 @@ const ClientsScreen = ({route}) => {
   console.log(route.params?.id);
 
   const navigation = useNavigation();
-  const selectedClient: Customer = {
-    id: 2,
-    username: 'Client',
-    first_name: 'Client',
-    last_name: 'Client',
-    email: 'client@example.com',
-    is_staff: false,
-    is_active: true,
-    date_joined: new Date(),
-    groups: [],
-    user_permissions: [],
-    user: 1,
-  }
+  
   const handleClientSelection = () => {
     navigation.navigate('HomeTabs', { 
       screen: 'Nouveau',
       params: {
-        id: 4,
+        clientId: 2,
       }
     })
   }

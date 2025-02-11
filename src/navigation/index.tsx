@@ -54,7 +54,7 @@ const FactureTabs = () => {
 const NouvelleFactureTopTabs = createMaterialTopTabNavigator();
 const NouvelleFactureTabs = ({route}) => {
   // Get the passed params
-  const id = route.params?.id;  // Extract params
+  const clientId = route.params?.clientId || null // Extract params
   return (
     <FactureTopTabs.Navigator
       screenOptions={{
@@ -65,7 +65,7 @@ const NouvelleFactureTabs = ({route}) => {
       }}
     >
 
-      <FactureTopTabs.Screen name="EDITION" component={Nouvellefacture}  initialParams={{ id }}/>
+      <FactureTopTabs.Screen name="EDITION" component={Nouvellefacture}  initialParams={{ clientId }}/>
       <FactureTopTabs.Screen name={"apperçu".toUpperCase()} component={AppercuModelFacture} />
     </FactureTopTabs.Navigator>
   );

@@ -37,16 +37,17 @@ export interface FlyUser {
   
   export interface Article {
     id: number;
-    label: string | null;
+    label: string ;
     quantity: number;
     price: number;
     description: string;
-    user: number; // Reference to FlyUser ID
+    user: number;
+    facture: number;
   }
   
   export interface Invoice {
     id: number;
-    label: string | null;
+    label: string;
     emission_date: Date;
     amount: number;
     discount: number;
