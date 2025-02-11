@@ -74,7 +74,25 @@ class ArticleViewSet(ModelViewSet):
         if self.request.user.roles.__eq__("admin"):
             return queryset.all()
         return queryset.filter(user=self.request.user)
+    
+    def get_queryset(self) -> QuerySet[Article]:
+        """Filter articles based on user permissions, factureId, and article ID"""
+        queryset = Article.objects.select_related("user", "facture")
 
+        # Admin users can see all articles
+        if self.request.user.roles == "admin":
+            return queryset
+
+        # Filter for authenticated user
+        queryset = queryset.filter(user=self.request.user)
+
+        # Filter by factureId if provided
+        facture_id = self.request.query_params.get("factureId")
+        if facture_id:
+            queryset = queryset.filter(facture_id=facture_id)
+
+        return queryset
+    
     @extend_schema(
         summary="Générer un PDF des articles",
         description="Génère un PDF contenant la liste des articles",

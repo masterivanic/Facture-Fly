@@ -6,29 +6,7 @@ from flyauth.models import Customer
 from flyauth.models import FlyUser
 
 
-class Article(models.Model):
-    label = models.CharField(_("article label"), max_length=150, null=True)
-    quantity = models.SmallIntegerField(default=0)
-    price = models.DecimalField(
-        _("article or prestation price"), decimal_places=2, max_digits=15, default=0.0
-    )
-    description = models.CharField(
-        _("Prestation description"), max_length=500, blank=True
-    )
-    user = models.ForeignKey(
-        FlyUser,
-        on_delete=models.CASCADE,
-        related_name="user_article",
-        verbose_name=_("user"),
-        default=1,
-    )
 
-    class Meta:
-        verbose_name = _("Article or Prestation")
-        verbose_name_plural = _("Articles or Prestations")
-
-    def __str__(self):
-        return self.label if self.label else str(self.pk)
 
 
 class Invoice(models.Model):
@@ -70,3 +48,34 @@ class Invoice(models.Model):
 
     def __str__(self):
         return self.label + " cost " + self.amount
+
+class Article(models.Model):
+    label = models.CharField(_("article label"), max_length=150, null=True)
+    quantity = models.SmallIntegerField(default=0)
+    price = models.DecimalField(
+        _("article or prestation price"), decimal_places=2, max_digits=15, default=0.0
+    )
+    description = models.CharField(
+        _("Prestation description"), max_length=500, blank=True
+    )
+    user = models.ForeignKey(
+        FlyUser,
+        on_delete=models.CASCADE,
+        related_name="user_article",
+        verbose_name=_("user"),
+        default=1,
+    )
+    facture = models.ForeignKey(
+        Invoice,
+        on_delete=models.CASCADE,
+        related_name="invoice_article",
+        verbose_name=_("invoice"),
+        db_column="facture_id"  
+    )
+
+    class Meta:
+        verbose_name = _("Article or Prestation")
+        verbose_name_plural = _("Articles or Prestations")
+
+    def __str__(self):
+        return self.label if self.label else str(self.pk)
