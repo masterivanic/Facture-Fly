@@ -216,9 +216,9 @@ const NouvelleFacture = ({route}) => {
 
       {/* Totals Section */}
       <View style={styles.totalsContainer}>
-        <View style={[styles.totalRow, styles.balanceDue, styles.change]}>
-          <Text >Sous-total</Text>
-          <Text >{subtotal.toFixed(2)}€</Text>
+        <View style={[styles.sousTotalRow, styles.balanceDue, styles.change]}>
+          <Text style={styles.sousTotalText}>Sous-total</Text>
+          <Text style={styles.sousTotalText}>{subtotal.toFixed(2)}€</Text>
         </View>
         <View style={styles.totalRow}>
           <Text>Remise</Text>
@@ -242,9 +242,9 @@ const NouvelleFacture = ({route}) => {
             <Text>%</Text>
           </View>
         </View>
-        <View style={[styles.totalRow, styles.balanceDue, styles.change]}>
-          <Text>Total</Text>
-          <Text>{total.toFixed(2)}€</Text>
+        <View style={[styles.sousTotalRow, styles.balanceDue, styles.change]}>
+          <Text style={styles.sousTotalText}>Total</Text>
+          <Text style={styles.sousTotalText}>{total.toFixed(2)}€</Text>
         </View>
         <View style={styles.totalRow}>
           <Text>Paiements</Text>
@@ -254,9 +254,9 @@ const NouvelleFacture = ({route}) => {
             onChangeText={(text) => setPayments(Number(text))}
           />
         </View>
-        <View style={[styles.totalRow, styles.balanceDue, styles.change]}>
-          <Text>Solde dû</Text>
-          <Text>{balanceDue.toFixed(2)}€</Text>
+        <View style={[styles.sousTotalRow, styles.balanceDue, styles.change]}>
+          <Text style={styles.sousTotalText}>Solde dû</Text>
+          <Text style={styles.sousTotalText}>{balanceDue.toFixed(2)}€</Text>
         </View>
       </View>
 
@@ -289,7 +289,7 @@ const NouvelleFacture = ({route}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor:'#CFDEEC',
     padding: 15,
   },
   change: {
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   },
   header: {
     borderBottomWidth: 2,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: 'white',
     paddingBottom: 15,
     marginBottom: 10,
   },
@@ -335,6 +335,7 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
     borderRadius: 8,
     marginBottom: 10,
+    backgroundColor: '#f8f9fa',
   },
   tableHeader: {
     flexDirection: 'row',
@@ -404,12 +405,27 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   totalRow: {
+    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: 'white',
 
+  },
+
+  sousTotalRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+
+  },
+
+  sousTotalText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: 'bold',
   },
   totalHighlight: {
     backgroundColor: '#f8f9fa',

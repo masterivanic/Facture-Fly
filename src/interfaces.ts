@@ -58,16 +58,18 @@ export interface FlyUser {
     is_paid: boolean;
     user: number; // Reference to FlyUser ID
     customer: number | null; // Reference to Customer ID (nullable)
+    total_amount: number;
   }
 
   export interface InvoiceDisplayed {
     client: string;
     invoiceNumber: string;
-    amount: string;
+    amount: number;
+    id: number;
   };
   
   export interface MonthlyInvoices  {
     month: string;
-    total: string;
+    total: number;
     data: InvoiceDisplayed[];
   };
