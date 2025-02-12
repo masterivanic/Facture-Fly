@@ -25,6 +25,20 @@ interface StateRef {
   total: number;
   invoice: Invoice | null;
 }
+interface InvoiceState {
+  invoiceLibelle: string;
+  emissionDate: Date;
+  dueDate: Date;
+  discount: number;
+  tax: number;
+  payments: number;
+  customer: Customer | null;
+  items: Article[];
+  signature: string | null;
+  isPaid: boolean;
+  total: number;
+  invoice: Invoice | null;
+}
 
 const NouvelleFacture = ({route}: {route: any}) => {
   const {  clientId, factureId } = route.params || {};
@@ -86,6 +100,27 @@ const NouvelleFacture = ({route}: {route: any}) => {
 
 
 
+  const syncInvoice = (currentState: InvoiceState): InvoiceWithArticles | null => {
+    if (!currentState.invoice) return null;
+    
+    return {
+      id: currentState.invoice.id,
+      label: currentState.invoiceLibelle, // Now correctly references updated label
+      emission_date: currentState.emissionDate,
+      due_date: currentState.dueDate.toISOString().split('T')[0],
+      discount: currentState.discount,
+      taxe: currentState.tax,
+      paid_amount: currentState.payments,
+      customer: currentState.customer?.id || null,
+      article: currentState.items.map(item => item),
+      signature: currentState.signature,
+      is_paid: currentState.isPaid,
+      amount: currentState.total,
+      user: 1,
+    };
+  };
+
+ 
   const calculateTotal = (item: Article) => item.quantity * item.price;
 
   const subtotal = items.reduce((sum, item) => sum + calculateTotal(item), 0);
@@ -93,26 +128,83 @@ const NouvelleFacture = ({route}: {route: any}) => {
   const total = subtotal - discount + totalTax;
   const balanceDue = total - payments;
 
-  const addItem = () => {
-    setItems([...items, {
+  
+  const invoiceState: InvoiceState = {
+    invoiceLibelle,
+    emissionDate,
+    dueDate,
+    discount,
+    tax,
+    payments,
+    customer,
+    items,
+    signature,
+    isPaid,
+    total,
+    invoice
+  };
+  const stateRef = useInvoiceStateRef(invoiceState);
+
+  const addItem = async () => {
+    const newItems = [...items, {
       id: items.length + 1,
-      label: '',
+      label: 'New Item',
       quantity: 0,
       price: 0,
       description: '',
       user: 1,
       facture: 1
-    }]);
+    }]
+    setItems(newItems);
+    const currentState = stateRef.current;
+    currentState.items = newItems;
+    const data = syncInvoice(currentState);
+    if (data) {
+      await updateInvoice(data);
+    }
   };
-  const removeItem = (id: number) => {
-    setItems(items.filter(item => id !== item.id))
-  }
 
-  const updateItem = (id: number, field: string, value: number | string) => {
-    setItems(items.map(item =>
-      item.id === id ? { ...item, [field]: typeof value === 'string' ? Number(value) : value } : item
-    ));
+  const removeItem = async (id: number) => {
+    const newItems = items.filter(item => id !== item.id);
+    setItems(newItems);
+    const currentState = stateRef.current;
+    currentState.items = newItems;
+    const data = syncInvoice(currentState);
+    if (data) {
+      await updateInvoice(data);
+    }
+  }
+  const debouncedLabelUpdate = debounce(async (state) => {
+    const data = syncInvoice(state);
+    if (data) {
+      await updateInvoice(data);
+    }
+  }, 500);
+  const updateItem = async (id: number, field: string, value: number | string) => {
+    const newItems = items.map(item =>
+      item.id === id ? { ...item, [field]: value } : item
+    );
+    
+    setItems(newItems);
+    const currentState = stateRef.current;
+    currentState.items = newItems;
+
+    if (field === 'label') {
+      // Debounce only for label updates
+      debouncedLabelUpdate(currentState);
+    } else {
+      // Immediate update for other fields
+      const data = syncInvoice(currentState);
+      if (data) {
+        await updateInvoice(data);
+      }
+    }
   };
+  useEffect(() => {
+    return () => {
+      debouncedLabelUpdate.cancel();
+    };
+  }, []);
 
   const handleSignature = (signature) => {
     setSignature(signature);
@@ -138,7 +230,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
     if(customer != null) {
       navigation.reset({
         index: 0,
-        routes: [{ name: 'ClientsStack', params: { screen: 'ClientDetail' , params: { clientId: customer.id } } }]
+        routes: [{ name: 'ClientsStack', params: { screen: 'ClientDetail' , params: { clientId: customer.id , factureId: invoice?.id } } }]
       });
     }else {
       navigation.reset({
@@ -147,20 +239,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
       });
     }
   }
-  interface InvoiceState {
-    invoiceLibelle: string;
-    emissionDate: Date;
-    dueDate: Date;
-    discount: number;
-    tax: number;
-    payments: number;
-    customer: Customer | null;
-    items: Article[];
-    signature: string | null;
-    isPaid: boolean;
-    total: number;
-    invoice: Invoice | null;
-  }
+  
   
   // Create a custom hook for state management
   function useInvoiceStateRef(initialState: InvoiceState) {
@@ -173,43 +252,6 @@ const NouvelleFacture = ({route}: {route: any}) => {
   
     return stateRef;
   }
-  
-    const invoiceState: InvoiceState = {
-      invoiceLibelle,
-      emissionDate,
-      dueDate,
-      discount,
-      tax,
-      payments,
-      customer,
-      items,
-      signature,
-      isPaid,
-      total,
-      invoice
-    };
-  
-    const stateRef = useInvoiceStateRef(invoiceState);
-  
-    const syncInvoice = (currentState: InvoiceState): InvoiceWithArticles | null => {
-      if (!currentState.invoice) return null;
-      
-      return {
-        id: currentState.invoice.id,
-        label: currentState.invoiceLibelle, // Now correctly references updated label
-        emission_date: currentState.emissionDate,
-        due_date: currentState.dueDate.toISOString().split('T')[0],
-        discount: currentState.discount,
-        taxe: currentState.tax,
-        paid_amount: currentState.payments,
-        customer: currentState.customer?.id || null,
-        article: currentState.items.map(item => item),
-        signature: currentState.signature,
-        is_paid: currentState.isPaid,
-        amount: currentState.total,
-        user: 1,
-      };
-    };
   
     const debouncedUpdate = useMemo(
       () => debounce(() => {

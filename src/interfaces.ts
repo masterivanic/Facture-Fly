@@ -28,7 +28,7 @@ export interface FlyUser {
     last_name: string;
     email: string;
     date_joined: Date;
-    address: string;
+    adress: string;
     user: number; // Reference to FlyUser ID
   }
   
