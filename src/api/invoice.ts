@@ -36,7 +36,7 @@ export const getArticlesByIds = async (articleIds: number[]) => {
     return articles;
 }
 
-export const createInvoice = async (invoice: Invoice) => {
+export const createInvoice = async (invoice: InvoiceWithArticles) => {
     const response = await axios.post(`${API_URL}/facturation/invoice/`, invoice,{
         headers: {
           Authorization: `Bearer ${TOKEN}`, 
@@ -54,4 +54,32 @@ export const updateInvoice = async (invoice: InvoiceWithArticles) => {
         },
     });
     return response.data as Invoice;
+}
+
+export const createDefaultInvoice = async () => {
+    const defaultInvoice: InvoiceWithArticles = {
+        id: 0,
+        label: 'Facture',
+        emission_date: new Date(),
+        amount: 0,
+        discount: 0,
+        taxe: 20,
+        paid_amount: 0,
+        signature: '',
+        due_date: new Date().toISOString().split('T')[0],
+        is_paid: false,
+        user: 1,
+        customer: null,
+        article: [
+          {
+            id: 0,
+            label: 'Article',
+            quantity: 0,
+            price: 0,
+            user: 1,
+            description: '',
+          }
+        ]
+    };
+    return await createInvoice(defaultInvoice);
 }

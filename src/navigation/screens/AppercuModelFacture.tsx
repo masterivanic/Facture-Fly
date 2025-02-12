@@ -1,69 +1,148 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { Invoice, UserCompany, Customer, InvoiceWithArticles, Article } from '../../interfaces';
+import { getArticlesByIds, getInvoiceById } from '../../api/invoice';
+import { getClient, getUserCompany } from '../../api/auth';
 
-const AppercuModelFacture = () => {
-  // Sample data
-  const invoiceData = {
-    company: {
-      name: 'East Repair Inc.',
-      address: '1912 Harvest Lane\nNew York, NY 12210',
-    },
-    client: {
-      name: 'John Smith',
-      address: '3787 Pineview Drive\nCambridge, MA 12210',
-    },
-    invoiceNumber: 'INV-2102/2019',
-    poNumber: '2312/2019',
-    invoiceDate: '26/02/2019',
-    dueDate: '26/02/2019',
-    items: [
-      { id: 1, description: 'Front and rear brake cables', qty: 1, price: 100.00 },
-      { id: 2, description: 'New set of pedal arms', qty: 2, price: 15.00 },
-      { id: 3, description: 'Labor 3hrs', qty: 3, price: 5.00 },
-    ],
-    taxRate: 6.25,
+
+
+const AppercuModelFacture = ({ route }: { route: any }) => {
+  const { factureId } = route.params || {};
+  const [invoice, setInvoice] = useState<InvoiceWithArticles | null>(null);
+  const [userCompany, setUserCompany] = useState<UserCompany | null>(null);
+  const [customer, setCustomer] = useState<Customer | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      try {
+        setLoading(true);
+        const userCompanyData = await getUserCompany();
+        setUserCompany(userCompanyData);
+
+        if (factureId) {
+          const data = await getInvoiceById(factureId);
+          console.log("data", data.due_date);
+          if (data) {
+            // Convert string amounts to numbers
+            const processedData = {
+              ...data,
+              amount: Number(data.amount),
+              discount: Number(data.discount),
+              taxe: Number(data.taxe),
+              paid_amount: Number(data.paid_amount),
+            };
+
+            // Fetch articles and customer in parallel
+            const [articles_data, client_data] = await Promise.all([
+              getArticlesByIds(data.article),
+              data.customer ? getClient(data.customer) : Promise.resolve(null)
+            ]);
+
+            setInvoice({
+              ...processedData,
+              article: articles_data,
+              due_date:new Date(data.due_date).toISOString().split('T')[0], // Already in correct format
+              emission_date: new Date(data.emission_date)
+            });
+
+            if (client_data) {
+              setCustomer({
+                ...client_data,
+                // Ensure address exists
+                adress: client_data.adress || 'No address provided'
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Fetch error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInvoice();
+  }, [factureId]);
+
+  if (loading) {
+    return <ActivityIndicator size="large" />;
+  }
+
+  if (!userCompany || !invoice) {
+    return <Text>Error loading invoice data</Text>;
+  }
+  // Formatting functions
+  const formatDate = (dateString: string | Date) => {
+    const date = new Date(dateString);
+    return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}/${date.getFullYear()}`;
   };
 
-  // Calculations
-  const subtotal = invoiceData.items.reduce((sum, item) => sum + (item.qty * item.price), 0);
-  const tax = (subtotal * invoiceData.taxRate) / 100;
-  const total = subtotal + tax;
+  const formatAddress = (address: string) => 
+    address.split(',').join('\n');
 
+  // Calculations
+  const subtotal = invoice?.article.reduce(
+    (sum: number, item: Article) => sum + (item.quantity * item.price), 0
+  ) || 0;
+  const totalTax = subtotal * (invoice.taxe / 100);
+  const totalDiscount = subtotal * (invoice.discount / 100);
+  const tax = invoice ? (subtotal * invoice.taxe) / 100 : 0  
+  const total = subtotal - totalDiscount + totalTax;
+  const balanceDue = total - invoice.paid_amount;  
   return (
     <ScrollView style={styles.container}>
       {/* Header Section */}
+     
       <View style={styles.header}>
+      {
+        userCompany && 
         <View style={styles.companyInfo}>
-          <Text style={styles.companyName}>{invoiceData.company.name}</Text>
-          <Text style={styles.companyAddress}>{invoiceData.company.address}</Text>
+          <Text style={styles.companyName}>{userCompany.name}</Text>
+          <Text style={styles.companyAddress}>
+            {formatAddress(userCompany.address)}
+          </Text>
         </View>
-        
+      }
+      {
+        customer && 
         <View style={styles.billTo}>
           <Text style={styles.sectionTitle}>Bill To:</Text>
-          <Text style={styles.clientName}>{invoiceData.client.name}</Text>
-          <Text style={styles.clientAddress}>{invoiceData.client.address}</Text>
+          <Text style={styles.clientName}>
+            {customer?.first_name} {customer?.last_name}
+          </Text>
+          <Text style={styles.clientAddress}>
+            {formatAddress(customer?.adress || '')}
+          </Text>
         </View>
+      }
       </View>
 
       {/* Invoice Details */}
+      {
+        invoice && 
       <View style={styles.detailsContainer}>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>P.O.#</Text>
-          <Text style={styles.detailValue}>{invoiceData.poNumber}</Text>
+          <Text style={styles.detailLabel}>Invoice #</Text>
+          <Text style={styles.detailValue}>{invoice?.label}</Text>
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Invoice Date</Text>
-          <Text style={styles.detailValue}>{invoiceData.invoiceDate}</Text>
+          <Text style={styles.detailValue}>{formatDate(invoice?.emission_date)}</Text>
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Due Date</Text>
-          <Text style={styles.detailValue}>{invoiceData.dueDate}</Text>
+          <Text style={styles.detailValue}>{formatDate(invoice?.due_date)}</Text>
         </View>
       </View>
+      }
 
       {/* Items Table */}
+      {
+        invoice && 
       <View style={styles.table}>
-        {/* Table Header */}
         <View style={[styles.row, styles.headerRow]}>
           <Text style={[styles.colQty, styles.headerText]}>QTY</Text>
           <Text style={[styles.colDesc, styles.headerText]}>DESCRIPTION</Text>
@@ -71,43 +150,49 @@ const AppercuModelFacture = () => {
           <Text style={[styles.colTotal, styles.headerText]}>AMOUNT</Text>
         </View>
 
-        {/* Table Rows */}
-        {invoiceData.items.map((item) => (
+        {invoice.article.map((item: Article) => (
           <View key={item.id} style={[styles.row, styles.itemRow]}>
-            <Text style={styles.colQty}>{item.qty}</Text>
-            <Text style={styles.colDesc}>{item.description}</Text>
-            <Text style={styles.colPrice}>${item.price.toFixed(2)}</Text>
-            <Text style={styles.colTotal}>${(item.qty * item.price).toFixed(2)}</Text>
+            <Text style={styles.colQty}>{Number(item.quantity)}</Text>
+            <Text style={styles.colDesc}>{item.label}</Text>
+            <Text style={styles.colPrice}>€{Number(item.price).toFixed(2)}</Text>
+            <Text style={styles.colTotal}>€{(Number(item.quantity) * Number(item.price)).toFixed(2)}</Text>
           </View>
         ))}
       </View>
+      }
 
       {/* Totals Section */}
+      {
+        invoice && 
       <View style={styles.totalsContainer}>
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Subtotal</Text>
-          <Text style={styles.totalValue}>${subtotal.toFixed(2)}</Text>
+          <Text style={styles.totalValue}>€{subtotal.toFixed(2)}</Text>
         </View>
         <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Sales Tax {invoiceData.taxRate}%</Text>
-          <Text style={styles.totalValue}>${tax.toFixed(2)}</Text>
+          <Text style={styles.totalLabel}>VAT {invoice.taxe}%</Text>
+          <Text style={styles.totalValue}>€{tax.toFixed(2)}</Text>
         </View>
         <View style={[styles.totalRow, styles.grandTotal]}>
           <Text style={styles.grandTotalLabel}>Total</Text>
-          <Text style={styles.grandTotalValue}>${total.toFixed(2)}</Text>
+          <Text style={styles.grandTotalValue}>€{total.toFixed(2)}</Text>
         </View>
       </View>
+      }
 
-      {/* Footer */}
+      {/* Payment Details */}
+        
+      {
+        userCompany && 
       <View style={styles.footer}>
         <Text style={styles.terms}>Terms & Conditions</Text>
         <Text style={styles.termsText}>Payment is due within 15 days</Text>
-        <Text style={styles.termsText}>Please make checks payable to: {invoiceData.company.name}</Text>
+        <Text style={styles.termsText}>Please make checks payable to: {userCompany?.name}</Text>
       </View>
+      }
     </ScrollView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -253,6 +338,7 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 12,
   },
+  
 });
 
 export default AppercuModelFacture;

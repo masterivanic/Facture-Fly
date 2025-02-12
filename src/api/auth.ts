@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Customer } from '../interfaces';
+import { Customer, UserCompany } from '../interfaces';
 import { API_URL, TOKEN } from '../constants';
 
 export const getClient = async (clientId: number) => {
@@ -30,4 +30,14 @@ export const updateClient = async (clientId: number, data: Customer) => {
         },
     });
     return response.data as Customer;
+}
+
+export const getUserCompany = async () => {
+    const response = await axios.get(`${API_URL}/auth/company/`,{
+        headers: {
+          Authorization: `Bearer ${TOKEN}`, 
+          "Content-Type": "application/json", 
+        },
+    });
+    return response.data.results[0] as UserCompany;
 }

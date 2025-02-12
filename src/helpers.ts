@@ -1,5 +1,5 @@
 import { getClient } from "./api/auth";
-import { InvoiceDisplayed, MonthlyInvoices } from "./interfaces";
+import { InvoiceDisplayed, InvoiceWithArticles, MonthlyInvoices } from "./interfaces";
 import { Invoice } from "./interfaces";
 export const transformInvoices = async (apiInvoices: Invoice[]): Promise<MonthlyInvoices[]> => {
     const groupedByMonth: { [key: string]: InvoiceDisplayed[] } = {};
@@ -41,4 +41,17 @@ export const formatCurrency = (amount: number): string => {
   
   // Helper function to capitalize first letter
 export const capitalizeFirstLetter = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
-  
+
+/**
+ * Transforms an InvoiceWithArticles into an Invoice.
+ * Converts due_date from string to Date and maps the article array
+ * from Article[] to an array of article ids (number[]).
+ */
+export function transformInvoice(invoiceWithArticles: InvoiceWithArticles): Invoice {
+  return {
+    ...invoiceWithArticles,
+    emission_date: new Date(invoiceWithArticles.emission_date), // Convert to Date
+    due_date: new Date(invoiceWithArticles.due_date),
+    article: invoiceWithArticles.article.map(article => article.id)
+  };
+}
