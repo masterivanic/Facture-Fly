@@ -4,18 +4,16 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Customer } from '../../../interfaces';
 
-const ClientsScreen = ({route}) => {
+const ClientsScreen = ({route}: {route: any}) => {
   console.log(route.params?.id);
 
   const navigation = useNavigation();
   
   const handleClientSelection = () => {
-    navigation.navigate('HomeTabs', { 
-      screen: 'Nouveau',
-      params: {
-        clientId: 2,
-      }
-    })
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'HomeTabs', params: { screen: 'Nouveau', params: { clientId: 1 } } }]
+    });
   }
   return (
     <View style={styles.container}>

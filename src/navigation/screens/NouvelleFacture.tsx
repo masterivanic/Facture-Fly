@@ -8,39 +8,17 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Invoice, Customer, Article } from '../../interfaces';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 import { useNavigation } from '@react-navigation/native';
-import { getClient } from '../../api/client';
-
-const defaultInvoice: Invoice = {
-  id: 0,
-  label: 'INV0001',
-  emission_date: new Date(),
-  amount: 0,
-  discount: 0,
-  taxe: 0.2,
-  paid_amount: 0,
-  signature: '',
-  due_date: new Date(),
-  is_paid: false,
-  user: 1,
-  customer: 2,
-}
+import { getClient } from '../../api/auth';
+import { getArticlesByIds, getInvoiceById } from '../../api/invoice';
 
 
-const NouvelleFacture = ({route}) => {
-  const {  clientId } = route.params || {};
-  useEffect(() => {
-    if(clientId != null) {
-      const client = getClient(clientId);
-      if (client) {  
-        setCustomer(client);
-      } 
-    }
-  }, [clientId]);
-  console.log("from Nouvelle Facture", clientId); 
 
-  const [invoiceLibelle, setInvoiceLibelle] = useState(defaultInvoice.label);
-  const [emissionDate, setEmissionDate] = useState(defaultInvoice.emission_date);
-  const [dueDate, setDueDate] = useState(defaultInvoice.due_date);
+const NouvelleFacture = ({route}: {route: any}) => {
+  const {  clientId, factureId } = route.params || {};
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [invoiceLibelle, setInvoiceLibelle] = useState('');
+  const [emissionDate, setEmissionDate] = useState(new Date());
+  const [dueDate, setDueDate] = useState(new Date());
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [items, setItems] = useState<Article[]>([]);
   const [discount, setDiscount] = useState(0);
@@ -49,8 +27,50 @@ const NouvelleFacture = ({route}) => {
   const [signature, setSignature] = useState(null);
   const signatureRef = useRef();
   const [isSigning, setIsSigning] = useState(false);
+  useEffect(() => {
+    const fetchClient = async () => {
+      console.log("from NF clientId", clientId);
+      if(clientId ) {
+        const data = await getClient(clientId);
+        if (data) {  
+          setCustomer(data);
+        } 
+      }
+    };
+    fetchClient();
+  }, [clientId]);
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      console.log("from NF factureId", factureId);
+      if(factureId) {
+        const data = await getInvoiceById(factureId);
+        if (data) {
+          console.log("from NF data", data);
+          const articles_data = await getArticlesByIds(data.article);
+          if(data.customer){
+            const client_data = await getClient(data.customer);
+            if(client_data) {
+              
+              setCustomer(client_data);
+            }
+          }
+          setInvoice(data);
+          setInvoiceLibelle(data.label);
+          setEmissionDate(new Date(data.emission_date));
+          setDueDate(new Date(data.due_date));
+          setDiscount(data.discount || 0);
+          setTax(data.taxe || 0);
+          setPayments(data.paid_amount || 0);
+          setItems(articles_data);
+        }
+      }
+    };
+    fetchInvoice();
+  }, [factureId]);
 
-  const calculateTotal = (item) => item.quantity * item.price;
+
+
+  const calculateTotal = (item: Article) => item.quantity * item.price;
 
   const subtotal = items.reduce((sum, item) => sum + calculateTotal(item), 0);
   const totalTax = subtotal * (tax / 100);
@@ -68,13 +88,13 @@ const NouvelleFacture = ({route}) => {
       facture: 1
     }]);
   };
-  const removeItem = (id) => {
+  const removeItem = (id: number) => {
     setItems(items.filter(item => id !== item.id))
   }
 
-  const updateItem = (id, field, value) => {
+  const updateItem = (id: number, field: string, value: number | string) => {
     setItems(items.map(item =>
-      item.id === id ? { ...item, [field]: Number(value) } : item
+      item.id === id ? { ...item, [field]: typeof value === 'string' ? Number(value) : value } : item
     ));
   };
 
@@ -82,10 +102,6 @@ const NouvelleFacture = ({route}) => {
     setSignature(signature);
   };
 
-  const clearSignature = () => {
-    signatureRef.current.clearSignature();
-    setSignature(null);
-  };
   const [apayer_str, setApayerStr] = useState('');
   const updateApayerStr = () => {
     if (dueDate.getTime() == emissionDate.getTime()) {
@@ -104,11 +120,18 @@ const NouvelleFacture = ({route}) => {
 
   const handleCustomeSelection = () => {
     if(customer != null) {
-      navigation.navigate('ClientsStack', {screen: 'ClientDetail'});
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'ClientsStack', params: { screen: 'ClientDetail' } }]
+      });
     }else {
-      navigation.navigate('ClientsStack', {screen: 'Clients', params: {id:2}});
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'ClientsStack', params: { screen: 'Clients', params: { id:2 } } }]
+      });
     }
   }
+  
 
   return (
     <ScrollView

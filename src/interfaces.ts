@@ -27,11 +27,8 @@ export interface FlyUser {
     first_name: string;
     last_name: string;
     email: string;
-    is_staff: boolean;
-    is_active: boolean;
     date_joined: Date;
-    groups: number[]; // Array of Group IDs
-    user_permissions: number[]; // Array of Permission IDs
+    address: string;
     user: number; // Reference to FlyUser ID
   }
   
@@ -58,7 +55,7 @@ export interface FlyUser {
     is_paid: boolean;
     user: number; // Reference to FlyUser ID
     customer: number | null; // Reference to Customer ID (nullable)
-    total_amount: number;
+    article: number[];
   }
 
   export interface InvoiceDisplayed {
