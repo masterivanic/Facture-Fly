@@ -7,7 +7,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Invoice, Customer, Article, InvoiceWithArticles } from '../../interfaces';
 import { CustomDatePicker } from '../components/CustomDatePicker';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { getClient } from '../../api/auth';
 import { getArticlesByIds, getInvoiceById, updateInvoice } from '../../api/invoice';
 import debounce from 'lodash.debounce'
@@ -25,6 +25,20 @@ interface StateRef {
   total: number;
   invoice: Invoice | null;
 }
+interface InvoiceState {
+  invoiceLibelle: string;
+  emissionDate: Date;
+  dueDate: Date;
+  discount: number;
+  tax: number;
+  payments: number;
+  customer: Customer | null;
+  items: Article[];
+  signature: string | null;
+  isPaid: boolean;
+  total: number;
+  invoice: Invoice | null;
+}
 
 const NouvelleFacture = ({route}: {route: any}) => {
   const {  clientId, factureId } = route.params || {};
@@ -38,9 +52,18 @@ const NouvelleFacture = ({route}: {route: any}) => {
   const [tax, setTax] = useState(0);
   const [payments, setPayments] = useState(0);
   const [signature, setSignature] = useState(null);
-  const signatureRef = useRef();
+  const signatureRef = useRef<any>(null);
   const [isSigning, setIsSigning] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
+  const [signatureKey, setSignatureKey] = useState(0);
+
+  // When the screen is focused, update the key to force remount
+  useFocusEffect(
+    React.useCallback(() => {
+      setSignatureKey((prevKey) => prevKey + 1);
+    }, [])
+  );
+
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -86,35 +109,114 @@ const NouvelleFacture = ({route}: {route: any}) => {
 
 
 
+  const syncInvoice = (currentState: InvoiceState): InvoiceWithArticles | null => {
+    if (!currentState.invoice) return null;
+    
+    return {
+      id: currentState.invoice.id,
+      label: currentState.invoiceLibelle, // Now correctly references updated label
+      emission_date: currentState.emissionDate,
+      due_date: currentState.dueDate.toISOString().split('T')[0],
+      discount: currentState.discount,
+      taxe: currentState.tax,
+      paid_amount: currentState.payments,
+      customer: currentState.customer?.id || null,
+      article: currentState.items.map(item => item),
+      signature: currentState.signature,
+      is_paid: currentState.isPaid,
+      amount: currentState.total,
+      user: 1,
+    };
+  };
+
+ 
   const calculateTotal = (item: Article) => item.quantity * item.price;
 
   const subtotal = items.reduce((sum, item) => sum + calculateTotal(item), 0);
   const totalTax = subtotal * (tax / 100);
-  const total = subtotal - discount + totalTax;
+  const totalDiscount = subtotal * (discount / 100);
+  const total = subtotal - totalDiscount + totalTax;
   const balanceDue = total - payments;
 
-  const addItem = () => {
-    setItems([...items, {
+  
+  const invoiceState: InvoiceState = {
+    invoiceLibelle,
+    emissionDate,
+    dueDate,
+    discount,
+    tax,
+    payments,
+    customer,
+    items,
+    signature,
+    isPaid,
+    total,
+    invoice
+  };
+  const stateRef = useInvoiceStateRef(invoiceState);
+
+  const addItem = async () => {
+    const newItems = [...items, {
       id: items.length + 1,
-      label: '',
+      label: 'New Item',
       quantity: 0,
       price: 0,
       description: '',
       user: 1,
       facture: 1
-    }]);
+    }]
+    setItems(newItems);
+    const currentState = stateRef.current;
+    currentState.items = newItems;
+    const data = syncInvoice(currentState);
+    if (data) {
+      await updateInvoice(data);
+    }
   };
-  const removeItem = (id: number) => {
-    setItems(items.filter(item => id !== item.id))
+
+  const removeItem = async (id: number) => {
+    const newItems = items.filter(item => id !== item.id);
+    setItems(newItems);
+    const currentState = stateRef.current;
+    currentState.items = newItems;
+    const data = syncInvoice(currentState);
+    if (data) {
+      await updateInvoice(data);
+    }
   }
+  const debouncedLabelUpdate = debounce(async (state) => {
+    const data = syncInvoice(state);
+    if (data) {
+      await updateInvoice(data);
+    }
+  }, 500);
+  const updateItem = async (id: number, field: string, value: number | string) => {
+    const newItems = items.map(item =>
+      item.id === id ? { ...item, [field]: value } : item
+    );
+    
+    setItems(newItems);
+    const currentState = stateRef.current;
+    currentState.items = newItems;
 
-  const updateItem = (id: number, field: string, value: number | string) => {
-    setItems(items.map(item =>
-      item.id === id ? { ...item, [field]: typeof value === 'string' ? Number(value) : value } : item
-    ));
+    if (field === 'label') {
+      // Debounce only for label updates
+      debouncedLabelUpdate(currentState);
+    } else {
+      // Immediate update for other fields
+      const data = syncInvoice(currentState);
+      if (data) {
+        await updateInvoice(data);
+      }
+    }
   };
+  useEffect(() => {
+    return () => {
+      debouncedLabelUpdate.cancel();
+    };
+  }, []);
 
-  const handleSignature = (signature) => {
+  const handleSignature = (signature: any) => {
     setSignature(signature);
   };
 
@@ -138,7 +240,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
     if(customer != null) {
       navigation.reset({
         index: 0,
-        routes: [{ name: 'ClientsStack', params: { screen: 'ClientDetail' , params: { clientId: customer.id } } }]
+        routes: [{ name: 'ClientsStack', params: { screen: 'ClientDetail' , params: { clientId: customer.id , factureId: invoice?.id } } }]
       });
     }else {
       navigation.reset({
@@ -147,20 +249,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
       });
     }
   }
-  interface InvoiceState {
-    invoiceLibelle: string;
-    emissionDate: Date;
-    dueDate: Date;
-    discount: number;
-    tax: number;
-    payments: number;
-    customer: Customer | null;
-    items: Article[];
-    signature: string | null;
-    isPaid: boolean;
-    total: number;
-    invoice: Invoice | null;
-  }
+  
   
   // Create a custom hook for state management
   function useInvoiceStateRef(initialState: InvoiceState) {
@@ -173,43 +262,6 @@ const NouvelleFacture = ({route}: {route: any}) => {
   
     return stateRef;
   }
-  
-    const invoiceState: InvoiceState = {
-      invoiceLibelle,
-      emissionDate,
-      dueDate,
-      discount,
-      tax,
-      payments,
-      customer,
-      items,
-      signature,
-      isPaid,
-      total,
-      invoice
-    };
-  
-    const stateRef = useInvoiceStateRef(invoiceState);
-  
-    const syncInvoice = (currentState: InvoiceState): InvoiceWithArticles | null => {
-      if (!currentState.invoice) return null;
-      
-      return {
-        id: currentState.invoice.id,
-        label: currentState.invoiceLibelle, // Now correctly references updated label
-        emission_date: currentState.emissionDate,
-        due_date: currentState.dueDate.toISOString().split('T')[0],
-        discount: currentState.discount,
-        taxe: currentState.tax,
-        paid_amount: currentState.payments,
-        customer: currentState.customer?.id || null,
-        article: currentState.items.map(item => item),
-        signature: currentState.signature,
-        is_paid: currentState.isPaid,
-        amount: currentState.total,
-        user: 1,
-      };
-    };
   
     const debouncedUpdate = useMemo(
       () => debounce(() => {
@@ -247,7 +299,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
         console.log('Due date updated:', currentState.dueDate);
       }
     }, [dueDate]);
-
+    
   return (
     <ScrollView
       scrollEnabled={!isSigning}
@@ -367,7 +419,13 @@ const NouvelleFacture = ({route}: {route: any}) => {
             <TextInput
               keyboardType="numeric"
               value={String(discount)}
-              onChangeText={(text) => setDiscount(Number(text))}
+              onChangeText={ async (text) => {
+                setDiscount(Number(text));
+                const currentState = stateRef.current;
+                currentState.discount = Number(text);
+                const data = syncInvoice(currentState);
+                if (data) await updateInvoice(data);
+              }}
             />
             <Text>%</Text>
           </View>
@@ -378,7 +436,13 @@ const NouvelleFacture = ({route}: {route: any}) => {
             <TextInput
               keyboardType="numeric"
               value={String(tax)}
-              onChangeText={(text) => setTax(Number(text))}
+              onChangeText={ async (text) => {
+                setTax(Number(text));
+                const currentState = stateRef.current;
+                currentState.tax = Number(text);
+                const data = syncInvoice(currentState);
+                if (data) await updateInvoice(data);
+              }}
             />
             <Text>%</Text>
           </View>
@@ -392,7 +456,13 @@ const NouvelleFacture = ({route}: {route: any}) => {
           <TextInput
             keyboardType="numeric"
             value={String(payments)}
-            onChangeText={(text) => setPayments(Number(text))}
+            onChangeText={ async (text) => {
+              setPayments(Number(text));
+              const currentState = stateRef.current;
+              currentState.payments = Number(text);
+              const data = syncInvoice(currentState);
+              if (data) await updateInvoice(data);
+            }}
           />
         </View>
         <View style={[styles.sousTotalRow, styles.balanceDue, styles.change]}>
@@ -405,17 +475,17 @@ const NouvelleFacture = ({route}: {route: any}) => {
       <View style={styles.signatureContainer}>
         <Text style={styles.sectionTitle}>Signature</Text>
         <Signature
-          onBegin={() => setIsSigning(true)}
-          onEnd={() => setIsSigning(false)}
-          ref={signatureRef}
-          onOK={handleSignature}
-          style={styles.signatureBox}
-          descriptionText=""
-          clearText="Effacer"
-          confirmText="Confirmer"
-          penColor="#000"
-          backgroundColor="#f8f8f8"
-        />
+        key={signatureKey} // remounts the component when key changes
+        onBegin={() => setIsSigning(true)}
+        onEnd={() => setIsSigning(false)}
+        onOK={handleSignature}
+        style={styles.signatureBox}
+        descriptionText="Hello"
+        clearText="Effacer"
+        confirmText="Confirmer"
+        penColor="#000"
+        backgroundColor="#f8f8f8"
+      />
       </View>
 
       {/* Send Button */}

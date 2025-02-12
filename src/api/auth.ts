@@ -21,3 +21,13 @@ export const getClients = async () => {
     });
     return response.data.results as Customer[];
 }
+
+export const updateClient = async (clientId: number, data: Customer) => {
+    const response = await axios.put(`${API_URL}/auth/customer/${clientId}/`, data, {
+        headers: {
+          Authorization: `Bearer ${TOKEN}`, 
+          "Content-Type": "application/json", 
+        },
+    });
+    return response.data as Customer;
+}
