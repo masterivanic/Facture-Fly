@@ -22,6 +22,7 @@ from facture.serializers import ArticleDetailSerializer
 from facture.serializers import InvoiceCreateOrUpdateSerializer
 from facture.serializers import InvoiceSerializer
 from flyauth.permissions import IsUserEnabled
+from utils.invoice import InvoiceGenerator
 
 
 class ArticleViewSet(ModelViewSet):
@@ -72,21 +73,14 @@ class InvoiceViewSet(ModelViewSet):
     )
     def preview_invoice(self, request: Request, pk: int) -> HttpResponse:
         invoice = self.get_object()
-        if not jpype.isJVMStarted():
-            jpype.startJVM()
-        java_util_Date = jpype.JClass("java.util.Date")
-        emission_date = java_util_Date(int(invoice.emission_date.timestamp() * 1000))
-        due_date_datetime = datetime.combine(invoice.due_date, datetime.min.time())
-        due_date = java_util_Date(int(due_date_datetime.timestamp() * 1000))
-
         data = {
             "label": invoice.label,
-            "emission_date": emission_date,
+            "emission_date": invoice.emission_date.strftime("%Y-%m-%d"),
             "amount": float(invoice.amount),
             "discount": float(invoice.discount),
             "taxe": float(invoice.taxe),
             "paid_amount": float(invoice.paid_amount),
-            "due_date": due_date,
+            "due_date": invoice.due_date.strftime("%Y-%m-%d"),
             "customer_name": invoice.customer.username,
             "articles": [
                 {
@@ -98,25 +92,20 @@ class InvoiceViewSet(ModelViewSet):
                 for article in invoice.article.all()
             ],
         }
-        REPORTS_DIR = Path(__file__).resolve().parent.parent / "jasper_template"
-        input_file = os.path.join(REPORTS_DIR, "invoice2.jrxml")
-        output_file = os.path.join(REPORTS_DIR, "invoice_{invoice.label}.pdf")
 
-        try:
-            pyreportjasper = PyReportJasper()
-            pyreportjasper.config(
-                input_file, output_file, parameters=data, output_formats=["pdf"]
-            )
-            # pyreportjasper.compile(write_jasper=True)
-            pyreportjasper.process_report()
-            with open(output_file, "rb") as pdf_file:
-                response = HttpResponse(pdf_file.read(), content_type="application/pdf")
-                response[
-                    "Content-Disposition"
-                ] = f'attachment; filename="invoice_{invoice.label}.pdf"'
-                return response
-        except Exception as e:
-            return HttpResponse(f"Error generating report: {e}", status=500)
+        logo_url = "https://example.com/path/to/logo.png"
+        footer_message = "Thank you for your business! You're awesome!"
+        file_stream = InvoiceGenerator.generate_pretty_invoice(
+            data, logo_url, footer_message
+        )
+        response = HttpResponse(
+            file_stream.read(),
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        response[
+            "Content-Disposition"
+        ] = f'attachment; filename="invoice_{invoice.label}.docx"'
+        return response
 
     @action(
         detail=False,
