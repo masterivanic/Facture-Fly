@@ -43,7 +43,7 @@ export const createInvoice = async (invoice: InvoiceWithArticles) => {
           "Content-Type": "application/json", 
         },
     });
-    return response.data as Invoice;
+    return response.data as InvoiceWithArticles;
 }
 
 export const updateInvoice = async (invoice: InvoiceWithArticles) => {

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Platform, Switch } from 'react-native';
 import Signature from 'react-native-signature-canvas';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -42,7 +42,8 @@ interface InvoiceState {
 }
 
 const NouvelleFacture = ({route}: {route: any}) => {
-  const {  clientId, factureId } = route.params || {};
+  const { clientId, factureId } = route.params || {};
+  const [initialLoad, setInitialLoad] = useState(true);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [invoiceLibelle, setInvoiceLibelle] = useState('');
   const [emissionDate, setEmissionDate] = useState(new Date());
@@ -57,6 +58,9 @@ const NouvelleFacture = ({route}: {route: any}) => {
   const [isSigning, setIsSigning] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
   const [signatureKey, setSignatureKey] = useState(0);
+  const emissionDateFirstUpdate = useRef(true);
+  const dueDateFirstUpdate = useRef(true);
+
 
   // When the screen is focused, update the key to force remount
   useFocusEffect(
@@ -68,62 +72,75 @@ const NouvelleFacture = ({route}: {route: any}) => {
 
   useEffect(() => {
     const fetchClient = async () => {
-      console.log("from NF clientId", clientId);
-      if(clientId ) {
+      if (clientId) {
         const data = await getClient(clientId);
-        if (data) {  
-          setCustomer(data);
-        } 
+        data && setCustomer(data);
       }
     };
     fetchClient();
   }, [clientId]);
+
+
   useEffect(() => {
     const fetchInvoice = async () => {
-      console.log("from NF factureId", factureId);
-      if(factureId) {
-        const data = await getInvoiceById(factureId);
-        if (data) {
-          console.log("from NF data", data);
-          const articles_data = await getArticlesByIds(data.article);
-          if(data.customer){
-            const client_data = await getClient(data.customer);
-            if(client_data) {
-              
-              setCustomer(client_data);
+      try {
+        let invoiceData;
+        if (factureId) {
+          invoiceData = await getInvoiceById(factureId);
+          if (invoiceData) {
+            const articles_data = await getArticlesByIds(invoiceData.article);
+            if (invoiceData.customer) {
+              const client_data = await getClient(invoiceData.customer);
+              client_data && setCustomer(client_data);
             }
+            
+            // Date comparison to prevent unnecessary updates
+            const newEmissionDate = new Date(invoiceData.emission_date);
+            const newDueDate = new Date(invoiceData.due_date);
+            
+            setInvoice(invoiceData);
+            setInvoiceLibelle(invoiceData.label);
+            if (newEmissionDate.getTime() !== emissionDate.getTime()) {
+              setEmissionDate(newEmissionDate);
+            }
+            if (newDueDate.getTime() !== dueDate.getTime()) {
+              setDueDate(newDueDate);
+            }
+            setDiscount(invoiceData.discount || 0);
+            setTax(invoiceData.taxe || 0);
+            setPayments(invoiceData.paid_amount || 0);
+            setItems(articles_data);
+            setIsPaid(invoiceData.is_paid);
           }
-          setInvoice(data);
-          setInvoiceLibelle(data.label);
-          setEmissionDate(new Date(data.emission_date));
-          setDueDate(new Date(data.due_date));
-          setDiscount(data.discount || 0);
-          setTax(data.taxe || 0);
-          setPayments(data.paid_amount || 0);
-          setItems(articles_data);
-          setIsPaid(data.is_paid);
+        } else {
+          invoiceData = await createDefaultInvoice();
+          if (invoiceData) {
+            const transformed = transformInvoice(invoiceData);
+            setInvoice(transformed);
+            setInvoiceLibelle(transformed.label);
+            setEmissionDate(new Date(transformed.emission_date));
+            setDueDate(new Date(transformed.due_date));
+            setDiscount(transformed.discount || 0);
+            setTax(transformed.taxe || 0);
+            setPayments(transformed.paid_amount || 0);
+            setItems(invoiceData.article);
+            setIsPaid(transformed.is_paid);
+          }
         }
-      }else{
-        //Its a new invoice
-        const data = await createDefaultInvoice();
-        if(data){
-          setInvoice(transformInvoice(data));
-          setInvoiceLibelle(data.label);
-          setEmissionDate(new Date(data.emission_date));
-          setDueDate(new Date(data.due_date));
-          setDiscount(data.discount || 0);
-          setTax(data.taxe || 0);
-          setPayments(data.paid_amount || 0);
-          setItems(data.article);
-          setIsPaid(data.is_paid);
-          setCustomer(null);
-          setSignature(null);
-        }
+      } finally {
+        setInitialLoad(false);
       }
     };
+    
     fetchInvoice();
   }, [factureId]);
-
+  const updateField = async (field: keyof InvoiceState, value: any) => {
+    if (initialLoad) return;
+    console.log("i am fucking updating", field, value);
+    const currentState = stateRef.current;
+    const data = syncInvoice({ ...currentState, [field]: value });
+    data && await updateInvoice(data);
+  };
 
 
   const syncInvoice = (currentState: InvoiceState): InvoiceWithArticles | null => {
@@ -140,7 +157,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
       customer: currentState.customer?.id || null,
       article: currentState.items.map(item => item),
       signature: currentState.signature,
-      is_paid: currentState.isPaid,
+      is_paid: currentState.isPaid || false,
       amount: currentState.total,
       user: 1,
     };
@@ -207,6 +224,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
       await updateInvoice(data);
     }
   }, 500);
+
   const updateItem = async (id: number, field: string, value: number | string) => {
     const newItems = items.map(item =>
       item.id === id ? { ...item, [field]: value } : item
@@ -299,25 +317,40 @@ const NouvelleFacture = ({route}: {route: any}) => {
         console.error('Update error:', error);
       }
     }
-
+    
     useEffect(() => {
-      const currentState = stateRef.current;
-      const data = syncInvoice(currentState);
-      if (data) {
-        updateInvoice(data);
-        console.log('Emission date updated:', currentState.emissionDate);
+      if (emissionDateFirstUpdate.current) {
+        emissionDateFirstUpdate.current = false;
+        return;
+      }
+      if (!initialLoad) {
+        updateField('emissionDate', emissionDate);
       }
     }, [emissionDate]);
     
+  
     useEffect(() => {
-      const currentState = stateRef.current;
-      const data = syncInvoice(currentState);
-      if (data) {
-        updateInvoice(data);
-        console.log('Due date updated:', currentState.dueDate);
+      if (dueDateFirstUpdate.current) {
+        dueDateFirstUpdate.current = false;
+        return;
+      }
+      if (!initialLoad) {
+        updateField('dueDate', dueDate);
       }
     }, [dueDate]);
-    
+    useEffect(() => {
+      emissionDateFirstUpdate.current = true;
+      dueDateFirstUpdate.current = true;
+    }, [factureId]);
+  
+    const handlePaidStatusChange = async (value: boolean) => {
+      if (initialLoad) return;
+      
+      setIsPaid(value);
+      const currentState = stateRef.current;
+      const data = syncInvoice({ ...currentState, isPaid: value });
+      data && await updateInvoice(data);
+    };
   return (
     <ScrollView
       scrollEnabled={!isSigning}
@@ -428,6 +461,15 @@ const NouvelleFacture = ({route}: {route: any}) => {
 
       {/* Totals Section */}
       <View style={styles.totalsContainer}>
+        <View style={styles.totalRow}>
+          <Text>Statut de paiement</Text>
+          <Switch
+            value={isPaid}
+            onValueChange={handlePaidStatusChange}
+            trackColor={{ false: '#767577', true: '#81b0ff' }}
+            thumbColor={isPaid ? '#0C897B' : '#f4f3f4'}
+          />
+        </View>
         <View style={[styles.sousTotalRow, styles.balanceDue, styles.change]}>
           <Text style={styles.sousTotalText}>Sous-total</Text>
           <Text style={styles.sousTotalText}>{subtotal.toFixed(2)}€</Text>

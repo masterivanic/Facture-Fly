@@ -31,7 +31,7 @@ import { CreateAccount } from '../createAccount/CreateAccount';
 import { CreateHome } from '../createAccount/CreateHome';
 import ClientsScreen from './screens/clients/ClientsScreen';
 import ClientDetailScreen from './screens/clients/ClientDetailScreen';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { InvoiceWithArticles } from '../interfaces';
 
 
@@ -57,8 +57,12 @@ const NouvelleFactureTopTabs = createMaterialTopTabNavigator();
 const NouvelleFactureTabs = ({route}: {route: any}) => {
   // Get the passed params
   
-  const {clientId, factureId, invoice, userCompany, customer} = route.params || {};
-
+  const {clientId, factureId} = route.params || {};
+  const [refreshKey, setRefreshKey] = useState(Date.now());
+  useEffect(() => {
+    setRefreshKey(Date.now());
+  }, [factureId, clientId]);
+  const [refreshCount, setRefreshCount] = useState(0);
   return (
     <FactureTopTabs.Navigator
       screenOptions={{
@@ -71,12 +75,15 @@ const NouvelleFactureTabs = ({route}: {route: any}) => {
 
       <FactureTopTabs.Screen name="EDITION" 
       component={Nouvellefacture}
-      key={factureId}  
       initialParams={{ clientId: clientId , factureId: factureId}}/>
 
-      <FactureTopTabs.Screen name={"apperçu".toUpperCase()} 
+      <FactureTopTabs.Screen name={"APERÇU"}
       component={AppercuModelFacture} 
-      initialParams={{factureId: factureId}}/>
+      initialParams={{factureId: factureId, refreshKey: refreshCount}}
+      listeners={{
+        tabPress: () => setRefreshCount(prev => prev + 1)
+      }}
+      />
     </FactureTopTabs.Navigator>
   );
 };
