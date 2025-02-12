@@ -7,7 +7,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Invoice, Customer, Article, InvoiceWithArticles } from '../../interfaces';
 import { CustomDatePicker } from '../components/CustomDatePicker';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { getClient } from '../../api/auth';
 import { getArticlesByIds, getInvoiceById, updateInvoice } from '../../api/invoice';
 import debounce from 'lodash.debounce'
@@ -52,9 +52,18 @@ const NouvelleFacture = ({route}: {route: any}) => {
   const [tax, setTax] = useState(0);
   const [payments, setPayments] = useState(0);
   const [signature, setSignature] = useState(null);
-  const signatureRef = useRef();
+  const signatureRef = useRef<any>(null);
   const [isSigning, setIsSigning] = useState(false);
   const [isPaid, setIsPaid] = useState(false);
+  const [signatureKey, setSignatureKey] = useState(0);
+
+  // When the screen is focused, update the key to force remount
+  useFocusEffect(
+    React.useCallback(() => {
+      setSignatureKey((prevKey) => prevKey + 1);
+    }, [])
+  );
+
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -125,7 +134,8 @@ const NouvelleFacture = ({route}: {route: any}) => {
 
   const subtotal = items.reduce((sum, item) => sum + calculateTotal(item), 0);
   const totalTax = subtotal * (tax / 100);
-  const total = subtotal - discount + totalTax;
+  const totalDiscount = subtotal * (discount / 100);
+  const total = subtotal - totalDiscount + totalTax;
   const balanceDue = total - payments;
 
   
@@ -206,7 +216,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
     };
   }, []);
 
-  const handleSignature = (signature) => {
+  const handleSignature = (signature: any) => {
     setSignature(signature);
   };
 
@@ -289,7 +299,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
         console.log('Due date updated:', currentState.dueDate);
       }
     }, [dueDate]);
-
+    
   return (
     <ScrollView
       scrollEnabled={!isSigning}
@@ -409,7 +419,13 @@ const NouvelleFacture = ({route}: {route: any}) => {
             <TextInput
               keyboardType="numeric"
               value={String(discount)}
-              onChangeText={(text) => setDiscount(Number(text))}
+              onChangeText={ async (text) => {
+                setDiscount(Number(text));
+                const currentState = stateRef.current;
+                currentState.discount = Number(text);
+                const data = syncInvoice(currentState);
+                if (data) await updateInvoice(data);
+              }}
             />
             <Text>%</Text>
           </View>
@@ -420,7 +436,13 @@ const NouvelleFacture = ({route}: {route: any}) => {
             <TextInput
               keyboardType="numeric"
               value={String(tax)}
-              onChangeText={(text) => setTax(Number(text))}
+              onChangeText={ async (text) => {
+                setTax(Number(text));
+                const currentState = stateRef.current;
+                currentState.tax = Number(text);
+                const data = syncInvoice(currentState);
+                if (data) await updateInvoice(data);
+              }}
             />
             <Text>%</Text>
           </View>
@@ -434,7 +456,13 @@ const NouvelleFacture = ({route}: {route: any}) => {
           <TextInput
             keyboardType="numeric"
             value={String(payments)}
-            onChangeText={(text) => setPayments(Number(text))}
+            onChangeText={ async (text) => {
+              setPayments(Number(text));
+              const currentState = stateRef.current;
+              currentState.payments = Number(text);
+              const data = syncInvoice(currentState);
+              if (data) await updateInvoice(data);
+            }}
           />
         </View>
         <View style={[styles.sousTotalRow, styles.balanceDue, styles.change]}>
@@ -447,17 +475,17 @@ const NouvelleFacture = ({route}: {route: any}) => {
       <View style={styles.signatureContainer}>
         <Text style={styles.sectionTitle}>Signature</Text>
         <Signature
-          onBegin={() => setIsSigning(true)}
-          onEnd={() => setIsSigning(false)}
-          ref={signatureRef}
-          onOK={handleSignature}
-          style={styles.signatureBox}
-          descriptionText=""
-          clearText="Effacer"
-          confirmText="Confirmer"
-          penColor="#000"
-          backgroundColor="#f8f8f8"
-        />
+        key={signatureKey} // remounts the component when key changes
+        onBegin={() => setIsSigning(true)}
+        onEnd={() => setIsSigning(false)}
+        onOK={handleSignature}
+        style={styles.signatureBox}
+        descriptionText="Hello"
+        clearText="Effacer"
+        confirmText="Confirmer"
+        penColor="#000"
+        backgroundColor="#f8f8f8"
+      />
       </View>
 
       {/* Send Button */}

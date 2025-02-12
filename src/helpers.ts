@@ -16,7 +16,7 @@ export const transformInvoices = async (apiInvoices: Invoice[]): Promise<Monthly
         id: invoice.id,
         client: client,
         invoiceNumber: invoice.label,
-        amount: invoice.amount,
+        amount: Number(invoice.amount),
       };
   
       if (!groupedByMonth[monthName]) {
@@ -35,6 +35,7 @@ export const transformInvoices = async (apiInvoices: Invoice[]): Promise<Monthly
   
   // Helper function to format amount
 export const formatCurrency = (amount: number): string => {
+    console.log( amount);
     return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(amount);
   };
   
