@@ -3,11 +3,11 @@ import { View, Button, SafeAreaView, Text } from 'react-native';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { formatDate } from '../../utils';
 
-export const CustomDatePicker = ({date, setDate}) => {
+export const CustomDatePicker = ({date, setDate}: {date: Date, setDate: (date: Date) => void}) => {
 
     const [show, setShow] = useState(false);
   
-    const onChange = (event, selectedDate) => {
+    const onChange = (event: any, selectedDate: any) => {
       const currentDate = selectedDate;
       setShow(false);
       setDate(currentDate);
