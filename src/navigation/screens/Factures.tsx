@@ -75,8 +75,6 @@ const FacturesList = ({
       index: 0,
       routes: [{ name: 'HomeTabs', params: { screen: 'Nouveau', params: { factureId: item.id } } }]
     });
-    
- 
   };
 
   const renderInvoice = ({ item }: { item: InvoiceDisplayed }) => (

@@ -1,10 +1,15 @@
 // ClientDetailScreen.js (for 1000003795.png)
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 
-const ClientDetailScreen = () => {
+const ClientDetailScreen = ({route}: {route: any}) => {
+  const { clientId } = route.params || {};
   return (
     <ScrollView style={styles.container}>
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#00E5E5"
+      />
       <Text style={styles.mainTitle}>Client</Text>
 
       <View style={styles.section}>

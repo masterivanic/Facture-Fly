@@ -134,15 +134,28 @@ const HomeTabs = createBottomTabNavigator({
 const Stack = createNativeStackNavigator();
 const ClientsStackScreen = () => {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="Clients" component={ClientsScreen} />
+    <Stack.Navigator screenOptions={
+      {
+        
+        headerShown:false,
+        headerStyle: {
+          backgroundColor: '#00E5E5',
+        },
+        headerTintColor: 'black',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }
+    }>
+      <Stack.Screen 
+      
+      name="Clients" component={ClientsScreen} />
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} />
     </Stack.Navigator>
   );
 }
 const RootStack = createNativeStackNavigator({
   screens: {
-    
     Login: {
       screen: Login,
       options: {

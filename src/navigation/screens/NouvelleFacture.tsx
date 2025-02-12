@@ -138,12 +138,12 @@ const NouvelleFacture = ({route}: {route: any}) => {
     if(customer != null) {
       navigation.reset({
         index: 0,
-        routes: [{ name: 'ClientsStack', params: { screen: 'ClientDetail' } }]
+        routes: [{ name: 'ClientsStack', params: { screen: 'ClientDetail' , params: { clientId: customer.id } } }]
       });
     }else {
       navigation.reset({
         index: 0,
-        routes: [{ name: 'ClientsStack', params: { screen: 'Clients', params: { id:2 } } }]
+        routes: [{ name: 'ClientsStack', params: { screen: 'Clients',  params: { factureId: invoice?.id } }} ]
       });
     }
   }
@@ -247,6 +247,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
         console.log('Due date updated:', currentState.dueDate);
       }
     }, [dueDate]);
+
   return (
     <ScrollView
       scrollEnabled={!isSigning}
