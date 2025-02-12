@@ -1,17 +1,30 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Platform } from 'react-native';
 import Signature from 'react-native-signature-canvas';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Invoice, Customer, Article } from '../../interfaces';
+import { Invoice, Customer, Article, InvoiceWithArticles } from '../../interfaces';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 import { useNavigation } from '@react-navigation/native';
 import { getClient } from '../../api/auth';
-import { getArticlesByIds, getInvoiceById } from '../../api/invoice';
+import { getArticlesByIds, getInvoiceById, updateInvoice } from '../../api/invoice';
+import debounce from 'lodash.debounce'
 
-
+interface StateRef {
+  emissionDate: Date;
+  dueDate: Date;
+  discount: number;
+  tax: number;
+  payments: number;
+  customer: Customer | null;
+  items: Article[];
+  signature: null;
+  isPaid: boolean;
+  total: number;
+  invoice: Invoice | null;
+}
 
 const NouvelleFacture = ({route}: {route: any}) => {
   const {  clientId, factureId } = route.params || {};
@@ -27,6 +40,8 @@ const NouvelleFacture = ({route}: {route: any}) => {
   const [signature, setSignature] = useState(null);
   const signatureRef = useRef();
   const [isSigning, setIsSigning] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
+
   useEffect(() => {
     const fetchClient = async () => {
       console.log("from NF clientId", clientId);
@@ -62,6 +77,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
           setTax(data.taxe || 0);
           setPayments(data.paid_amount || 0);
           setItems(articles_data);
+          setIsPaid(data.is_paid);
         }
       }
     };
@@ -131,6 +147,65 @@ const NouvelleFacture = ({route}: {route: any}) => {
       });
     }
   }
+  async function updateInvoiceLabel(label: string, currentState: any) {
+    try {
+      const invoice_with_articles = syncInvoice(label, currentState);
+      if (invoice_with_articles) { 
+        console.log("invoiceWArticles label updated", invoice_with_articles.label);
+        await updateInvoice(invoice_with_articles);
+      }
+    } catch (error) {
+      console.error("Error updating label:", error);
+    }
+  }
+  
+  const stateRef = useRef<StateRef>();
+  stateRef.current = {
+    emissionDate,
+    dueDate,
+    discount,
+    tax,
+    payments,
+    customer,
+    items,
+    signature,
+    isPaid,
+    total,
+    invoice,
+  };
+  
+  const syncInvoice = (label: string, currentState: any): InvoiceWithArticles | null => {
+    //TODO: Philippe will update the endpoint to update the invoice
+    //For now, we are just creating another interface to update the invoice by also passing the articles
+    //Not great but Ok for now
+    if (currentState.invoice) {
+      return {
+        id: currentState.invoice.id,
+        label: label,
+        emission_date: currentState.emissionDate,
+        due_date: currentState.dueDate.toISOString().split('T')[0],
+        discount: currentState.discount,
+        taxe: currentState.tax,
+        paid_amount: currentState.payments,
+        customer: currentState.customer?.id || null,
+        article: currentState.items.map(item => item),
+        signature: currentState.signature,
+        is_paid: currentState.isPaid,
+        amount: currentState.total,
+        user: 1,
+      };
+    }
+    return null;
+  };
+  
+  const debouncedUpdate = useMemo(
+    () =>
+      debounce((label: string) => {
+        updateInvoiceLabel(label, stateRef.current);
+      }, 500),
+    []
+  );
+  
   
 
   return (
@@ -144,12 +219,15 @@ const NouvelleFacture = ({route}: {route: any}) => {
       />
       {/* Header Section */}
       <View style={styles.header}>
-        <TextInput
-          style={styles.invoiceNumber}
-          value={invoiceLibelle}
-          onChangeText={setInvoiceLibelle}
-          placeholder="Libellé de la facture"
-        />
+      <TextInput
+        style={styles.invoiceNumber}
+        value={invoiceLibelle}
+        onChangeText={(text) => {
+          setInvoiceLibelle(text);
+          debouncedUpdate(text);
+        }}
+        placeholder="Libellé de la facture"
+      />
         <Text style={styles.apayer}>{apayer_str}</Text>
       </View>
       <View style={styles.section}>

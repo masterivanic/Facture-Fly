@@ -70,3 +70,19 @@ export interface FlyUser {
     total: number;
     data: InvoiceDisplayed[];
   };
+
+  export interface InvoiceWithArticles {
+    id: number;
+    label: string;
+    emission_date: Date;
+    amount: number;
+    discount: number;
+    taxe: number;
+    paid_amount: number;
+    signature: string | null;
+    due_date: string ;
+    is_paid: boolean;
+    user: number; 
+    customer: number | null; 
+    article: Article[];
+  }
