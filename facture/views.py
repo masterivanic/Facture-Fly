@@ -1,11 +1,5 @@
-import os
-from datetime import datetime
-from pathlib import Path
-
-import jpype
 from django.db.models import QuerySet
 from django.http import HttpResponse
-from pyreportjasper import PyReportJasper
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -98,13 +92,10 @@ class InvoiceViewSet(ModelViewSet):
         file_stream = InvoiceGenerator.generate_pretty_invoice(
             data, logo_url, footer_message
         )
-        response = HttpResponse(
-            file_stream.read(),
-            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        )
+        response = HttpResponse(file_stream.read(), content_type="application/pdf")
         response[
             "Content-Disposition"
-        ] = f'attachment; filename="invoice_{invoice.label}.docx"'
+        ] = f'attachment; filename="invoice_{invoice.label}.pdf"'
         return response
 
     @action(

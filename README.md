@@ -58,8 +58,11 @@ This is a Django project designed to [briefly describe the purpose of your proje
 
 ### Step 7: Run the Server Uusing docker
 ``docker build -t facture-fly .``
-``docker run -e DJANGO_DEV_SERVER_PORT=8030 -p 8030:8030 facture-fly``
 
+``docker run --name facture_container -e DJANGO_DEV_SERVER_PORT=8030 -e FRONT_HOST=http://localhost:3000 -p 8030:8030 facture-fly ``
+
+NB: *FRONT_HOST is domain adress of client who make api call, you can too override DJANGO_SUPERUSER_USERNAME,DJANGO_SUPERUSER_EMAIL, DJANGO_SUPERUSER_PASSWORD
+by passed them as args in docker run command*
 
 ## Usage
 

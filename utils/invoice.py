@@ -1,4 +1,7 @@
+import os
+import subprocess
 from io import BytesIO
+from pathlib import Path
 
 import requests
 from docx import Document
@@ -8,6 +11,8 @@ from docx.shared import Inches
 from docx.shared import Pt
 from docx.shared import RGBColor
 from PIL import Image
+
+REPORTS_DIR = Path(__file__).resolve().parent.parent / "generated_invoice"
 
 
 class InvoiceGenerator:
@@ -47,9 +52,9 @@ class InvoiceGenerator:
         title_run = title.add_run("INVOICE")
         title_run.font.name = "Arial"
         title_run.font.size = Pt(24)
-        title_run.font.color.rgb = RGBColor(0, 0, 0)  # Black
+        title_run.font.color.rgb = RGBColor(0, 0, 0)
         title_run.bold = True
-        title.alignment = 1  # Center alignment
+        title.alignment = 1
 
         doc.add_paragraph().add_run().add_break()
 
@@ -96,8 +101,21 @@ class InvoiceGenerator:
         footer_paragraph.alignment = 1
         footer_paragraph.runs[0].font.italic = True
 
-        file_stream = BytesIO()
-        doc.save(file_stream)
-        file_stream.seek(0)
+        docx_file = os.path.join(REPORTS_DIR, "temp_invoice.docx")
+        doc.save(docx_file)
 
-        return file_stream
+        subprocess.run(
+            [
+                "libreoffice",
+                "--headless",
+                "--convert-to",
+                "pdf",
+                "--outdir",
+                REPORTS_DIR,
+                docx_file,
+            ]
+        )
+        pdf_file = os.path.join(REPORTS_DIR, "temp_invoice.pdf")
+        with open(pdf_file, "rb") as f:
+            pdf_stream = BytesIO(f.read())
+        return pdf_stream

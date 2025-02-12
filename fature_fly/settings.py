@@ -1,3 +1,4 @@
+import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -122,10 +123,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "flyauth.FlyUser"
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:8081",
+    os.getenv("FRONT_HOST"),
 ]
 CORS_ORIGIN_ALLOW_ALL = True
-CORS_ORIGIN_WHITELIST = ("http://localhost:8081",)
+CORS_ORIGIN_WHITELIST = (os.getenv("FRONT_HOST"),)
 
 
 SIMPLE_JWT = {
