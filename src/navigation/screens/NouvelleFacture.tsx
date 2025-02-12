@@ -1,46 +1,37 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Platform } from 'react-native';
 import Signature from 'react-native-signature-canvas';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Invoice, Customer, Article } from '../../interfaces';
+import { Invoice, Customer, Article, InvoiceWithArticles } from '../../interfaces';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 import { useNavigation } from '@react-navigation/native';
-import { getClient } from '../../api/client';
+import { getClient } from '../../api/auth';
+import { getArticlesByIds, getInvoiceById, updateInvoice } from '../../api/invoice';
+import debounce from 'lodash.debounce'
 
-const defaultInvoice: Invoice = {
-  id: 0,
-  label: 'INV0001',
-  emission_date: new Date(),
-  amount: 0,
-  discount: 0,
-  taxe: 0.2,
-  paid_amount: 0,
-  signature: '',
-  due_date: new Date(),
-  is_paid: false,
-  user: 1,
-  customer: 2,
+interface StateRef {
+  emissionDate: Date;
+  dueDate: Date;
+  discount: number;
+  tax: number;
+  payments: number;
+  customer: Customer | null;
+  items: Article[];
+  signature: null;
+  isPaid: boolean;
+  total: number;
+  invoice: Invoice | null;
 }
 
-
-const NouvelleFacture = ({route}) => {
-  const {  clientId } = route.params || {};
-  useEffect(() => {
-    if(clientId != null) {
-      const client = getClient(clientId);
-      if (client) {  
-        setCustomer(client);
-      } 
-    }
-  }, [clientId]);
-  console.log("from Nouvelle Facture", clientId); 
-
-  const [invoiceLibelle, setInvoiceLibelle] = useState(defaultInvoice.label);
-  const [emissionDate, setEmissionDate] = useState(defaultInvoice.emission_date);
-  const [dueDate, setDueDate] = useState(defaultInvoice.due_date);
+const NouvelleFacture = ({route}: {route: any}) => {
+  const {  clientId, factureId } = route.params || {};
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [invoiceLibelle, setInvoiceLibelle] = useState('');
+  const [emissionDate, setEmissionDate] = useState(new Date());
+  const [dueDate, setDueDate] = useState(new Date());
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [items, setItems] = useState<Article[]>([]);
   const [discount, setDiscount] = useState(0);
@@ -49,8 +40,53 @@ const NouvelleFacture = ({route}) => {
   const [signature, setSignature] = useState(null);
   const signatureRef = useRef();
   const [isSigning, setIsSigning] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
 
-  const calculateTotal = (item) => item.quantity * item.price;
+  useEffect(() => {
+    const fetchClient = async () => {
+      console.log("from NF clientId", clientId);
+      if(clientId ) {
+        const data = await getClient(clientId);
+        if (data) {  
+          setCustomer(data);
+        } 
+      }
+    };
+    fetchClient();
+  }, [clientId]);
+  useEffect(() => {
+    const fetchInvoice = async () => {
+      console.log("from NF factureId", factureId);
+      if(factureId) {
+        const data = await getInvoiceById(factureId);
+        if (data) {
+          console.log("from NF data", data);
+          const articles_data = await getArticlesByIds(data.article);
+          if(data.customer){
+            const client_data = await getClient(data.customer);
+            if(client_data) {
+              
+              setCustomer(client_data);
+            }
+          }
+          setInvoice(data);
+          setInvoiceLibelle(data.label);
+          setEmissionDate(new Date(data.emission_date));
+          setDueDate(new Date(data.due_date));
+          setDiscount(data.discount || 0);
+          setTax(data.taxe || 0);
+          setPayments(data.paid_amount || 0);
+          setItems(articles_data);
+          setIsPaid(data.is_paid);
+        }
+      }
+    };
+    fetchInvoice();
+  }, [factureId]);
+
+
+
+  const calculateTotal = (item: Article) => item.quantity * item.price;
 
   const subtotal = items.reduce((sum, item) => sum + calculateTotal(item), 0);
   const totalTax = subtotal * (tax / 100);
@@ -68,13 +104,13 @@ const NouvelleFacture = ({route}) => {
       facture: 1
     }]);
   };
-  const removeItem = (id) => {
+  const removeItem = (id: number) => {
     setItems(items.filter(item => id !== item.id))
   }
 
-  const updateItem = (id, field, value) => {
+  const updateItem = (id: number, field: string, value: number | string) => {
     setItems(items.map(item =>
-      item.id === id ? { ...item, [field]: Number(value) } : item
+      item.id === id ? { ...item, [field]: typeof value === 'string' ? Number(value) : value } : item
     ));
   };
 
@@ -82,10 +118,6 @@ const NouvelleFacture = ({route}) => {
     setSignature(signature);
   };
 
-  const clearSignature = () => {
-    signatureRef.current.clearSignature();
-    setSignature(null);
-  };
   const [apayer_str, setApayerStr] = useState('');
   const updateApayerStr = () => {
     if (dueDate.getTime() == emissionDate.getTime()) {
@@ -104,11 +136,77 @@ const NouvelleFacture = ({route}) => {
 
   const handleCustomeSelection = () => {
     if(customer != null) {
-      navigation.navigate('ClientsStack', {screen: 'ClientDetail'});
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'ClientsStack', params: { screen: 'ClientDetail' } }]
+      });
     }else {
-      navigation.navigate('ClientsStack', {screen: 'Clients', params: {id:2}});
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'ClientsStack', params: { screen: 'Clients', params: { id:2 } } }]
+      });
     }
   }
+  async function updateInvoiceLabel(label: string, currentState: any) {
+    try {
+      const invoice_with_articles = syncInvoice(label, currentState);
+      if (invoice_with_articles) { 
+        console.log("invoiceWArticles label updated", invoice_with_articles.label);
+        await updateInvoice(invoice_with_articles);
+      }
+    } catch (error) {
+      console.error("Error updating label:", error);
+    }
+  }
+  
+  const stateRef = useRef<StateRef>();
+  stateRef.current = {
+    emissionDate,
+    dueDate,
+    discount,
+    tax,
+    payments,
+    customer,
+    items,
+    signature,
+    isPaid,
+    total,
+    invoice,
+  };
+  
+  const syncInvoice = (label: string, currentState: any): InvoiceWithArticles | null => {
+    //TODO: Philippe will update the endpoint to update the invoice
+    //For now, we are just creating another interface to update the invoice by also passing the articles
+    //Not great but Ok for now
+    if (currentState.invoice) {
+      return {
+        id: currentState.invoice.id,
+        label: label,
+        emission_date: currentState.emissionDate,
+        due_date: currentState.dueDate.toISOString().split('T')[0],
+        discount: currentState.discount,
+        taxe: currentState.tax,
+        paid_amount: currentState.payments,
+        customer: currentState.customer?.id || null,
+        article: currentState.items.map(item => item),
+        signature: currentState.signature,
+        is_paid: currentState.isPaid,
+        amount: currentState.total,
+        user: 1,
+      };
+    }
+    return null;
+  };
+  
+  const debouncedUpdate = useMemo(
+    () =>
+      debounce((label: string) => {
+        updateInvoiceLabel(label, stateRef.current);
+      }, 500),
+    []
+  );
+  
+  
 
   return (
     <ScrollView
@@ -121,12 +219,15 @@ const NouvelleFacture = ({route}) => {
       />
       {/* Header Section */}
       <View style={styles.header}>
-        <TextInput
-          style={styles.invoiceNumber}
-          value={invoiceLibelle}
-          onChangeText={setInvoiceLibelle}
-          placeholder="Libellé de la facture"
-        />
+      <TextInput
+        style={styles.invoiceNumber}
+        value={invoiceLibelle}
+        onChangeText={(text) => {
+          setInvoiceLibelle(text);
+          debouncedUpdate(text);
+        }}
+        placeholder="Libellé de la facture"
+      />
         <Text style={styles.apayer}>{apayer_str}</Text>
       </View>
       <View style={styles.section}>

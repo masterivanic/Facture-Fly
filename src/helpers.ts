@@ -1,23 +1,29 @@
+import { getClient } from "./api/auth";
 import { InvoiceDisplayed, MonthlyInvoices } from "./interfaces";
 import { Invoice } from "./interfaces";
-export const transformInvoices = (apiInvoices: Invoice[]): MonthlyInvoices[] => {
+export const transformInvoices = async (apiInvoices: Invoice[]): Promise<MonthlyInvoices[]> => {
     const groupedByMonth: { [key: string]: InvoiceDisplayed[] } = {};
   
-    apiInvoices.forEach((invoice) => {
+    for (const invoice of apiInvoices) {
       const monthName = new Date(invoice.emission_date).toLocaleString("fr-FR", { month: "long" });
         //TODO: add get customer(client) api call
+        let client = "Aucun client";
+        if(invoice.customer != null) {
+            const customer = await getClient(invoice.customer);
+            client = customer?.first_name + " " + customer?.last_name;
+        }
       const formattedInvoice: InvoiceDisplayed = {
         id: invoice.id,
-        client: "Aucun client",
+        client: client,
         invoiceNumber: invoice.label,
-        amount: invoice.total_amount,
+        amount: invoice.amount,
       };
   
       if (!groupedByMonth[monthName]) {
         groupedByMonth[monthName] = [];
       }
       groupedByMonth[monthName].push(formattedInvoice);
-    });
+    }
   
     // Convert to MonthlyInvoices[]
     return Object.entries(groupedByMonth).map(([month, data]) => ({
