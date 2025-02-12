@@ -147,41 +147,56 @@ const NouvelleFacture = ({route}: {route: any}) => {
       });
     }
   }
-  async function updateInvoiceLabel(label: string, currentState: any) {
-    try {
-      const invoice_with_articles = syncInvoice(label, currentState);
-      if (invoice_with_articles) { 
-        console.log("invoiceWArticles label updated", invoice_with_articles.label);
-        await updateInvoice(invoice_with_articles);
-      }
-    } catch (error) {
-      console.error("Error updating label:", error);
-    }
+  interface InvoiceState {
+    invoiceLibelle: string;
+    emissionDate: Date;
+    dueDate: Date;
+    discount: number;
+    tax: number;
+    payments: number;
+    customer: Customer | null;
+    items: Article[];
+    signature: string | null;
+    isPaid: boolean;
+    total: number;
+    invoice: Invoice | null;
   }
   
-  const stateRef = useRef<StateRef>();
-  stateRef.current = {
-    emissionDate,
-    dueDate,
-    discount,
-    tax,
-    payments,
-    customer,
-    items,
-    signature,
-    isPaid,
-    total,
-    invoice,
-  };
+  // Create a custom hook for state management
+  function useInvoiceStateRef(initialState: InvoiceState) {
+    const stateRef = useRef<InvoiceState>(initialState);
+    
+    // Update ref on every render
+    useEffect(() => {
+      stateRef.current = initialState;
+    });
   
-  const syncInvoice = (label: string, currentState: any): InvoiceWithArticles | null => {
-    //TODO: Philippe will update the endpoint to update the invoice
-    //For now, we are just creating another interface to update the invoice by also passing the articles
-    //Not great but Ok for now
-    if (currentState.invoice) {
+    return stateRef;
+  }
+  
+    const invoiceState: InvoiceState = {
+      invoiceLibelle,
+      emissionDate,
+      dueDate,
+      discount,
+      tax,
+      payments,
+      customer,
+      items,
+      signature,
+      isPaid,
+      total,
+      invoice
+    };
+  
+    const stateRef = useInvoiceStateRef(invoiceState);
+  
+    const syncInvoice = (currentState: InvoiceState): InvoiceWithArticles | null => {
+      if (!currentState.invoice) return null;
+      
       return {
         id: currentState.invoice.id,
-        label: label,
+        label: currentState.invoiceLibelle, // Now correctly references updated label
         emission_date: currentState.emissionDate,
         due_date: currentState.dueDate.toISOString().split('T')[0],
         discount: currentState.discount,
@@ -194,20 +209,44 @@ const NouvelleFacture = ({route}: {route: any}) => {
         amount: currentState.total,
         user: 1,
       };
-    }
-    return null;
-  };
+    };
   
-  const debouncedUpdate = useMemo(
-    () =>
-      debounce((label: string) => {
-        updateInvoiceLabel(label, stateRef.current);
+    const debouncedUpdate = useMemo(
+      () => debounce(() => {
+        updateInvoiceLabel(stateRef.current);
       }, 500),
-    []
-  );
+      [] 
+    );
   
-  
+    async function updateInvoiceLabel(currentState: InvoiceState) {
+      try {
+        const invoiceWithArticles = syncInvoice(currentState);
+        if (invoiceWithArticles) {
+          await updateInvoice(invoiceWithArticles);
+          console.log('Updated invoice:', invoiceWithArticles.label);
+        }
+      } catch (error) {
+        console.error('Update error:', error);
+      }
+    }
 
+    useEffect(() => {
+      const currentState = stateRef.current;
+      const data = syncInvoice(currentState);
+      if (data) {
+        updateInvoice(data);
+        console.log('Emission date updated:', currentState.emissionDate);
+      }
+    }, [emissionDate]);
+    
+    useEffect(() => {
+      const currentState = stateRef.current;
+      const data = syncInvoice(currentState);
+      if (data) {
+        updateInvoice(data);
+        console.log('Due date updated:', currentState.dueDate);
+      }
+    }, [dueDate]);
   return (
     <ScrollView
       scrollEnabled={!isSigning}
@@ -224,7 +263,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
         value={invoiceLibelle}
         onChangeText={(text) => {
           setInvoiceLibelle(text);
-          debouncedUpdate(text);
+          debouncedUpdate();
         }}
         placeholder="Libellé de la facture"
       />
