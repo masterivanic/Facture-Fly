@@ -72,7 +72,8 @@ class InvoiceViewSet(ModelViewSet):
     )
     def preview_invoice(self, request: Request, pk: int) -> HttpResponse:
         invoice = self.get_object()
-        jpype.startJVM()
+        if not jpype.isJVMStarted():
+            jpype.startJVM()
         java_util_Date = jpype.JClass("java.util.Date")
         emission_date = java_util_Date(int(invoice.emission_date.timestamp() * 1000))
         due_date_datetime = datetime.combine(invoice.due_date, datetime.min.time())
@@ -98,7 +99,7 @@ class InvoiceViewSet(ModelViewSet):
             ],
         }
         REPORTS_DIR = Path(__file__).resolve().parent.parent / "jasper_template"
-        input_file = os.path.join(REPORTS_DIR, "invoice.jrxml")
+        input_file = os.path.join(REPORTS_DIR, "invoice2.jrxml")
         output_file = os.path.join(REPORTS_DIR, "invoice_{invoice.label}.pdf")
 
         try:

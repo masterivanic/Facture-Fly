@@ -1,3 +1,4 @@
+from datetime import date
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
@@ -39,6 +40,7 @@ class Command(BaseCommand):
         invoice = Invoice.objects.create(
             label="Invoice_003",
             emission_date=datetime.now(),
+            due_date=datetime.today().strftime("%Y-%m-%d"),
             amount=Decimal(600),
             discount=Decimal(0),
             taxe=Decimal(20.15),
