@@ -26,7 +26,7 @@ class InvoiceCreateOrUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Invoice
-        exclude = ["user", "created_at", "updated_at", "is_paid"]
+        exclude = ["user", "created_at", "updated_at"]
 
     def validate(self, attrs) -> Dict[str, Any]:
         amount = attrs.get("amount", 0)
