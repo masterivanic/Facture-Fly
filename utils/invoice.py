@@ -17,10 +17,13 @@ REPORTS_DIR = Path(__file__).resolve().parent.parent / "generated_invoice"
 
 class InvoiceGenerator:
     @staticmethod
-    def generate_pretty_invoice(data, logo_url, footer_message):
+    def generate_pretty_invoice(
+        data,
+        logo_url: str = "https://example.com/path/to/logo.png",
+        footer_message: str = "Thank you for your business! You're awesome!",
+    ) -> BytesIO:
         doc = Document()
 
-        # Set document margins
         section = doc.sections[0]
         section.left_margin = Inches(0.5)
         section.right_margin = Inches(0.5)

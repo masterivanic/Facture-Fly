@@ -1,5 +1,6 @@
 from django.db.models import QuerySet
 from django.http import HttpResponse
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -58,6 +59,10 @@ class InvoiceViewSet(ModelViewSet):
             return self.queryset.all()
         return self.queryset.filter(user=self.request.user)
 
+    @extend_schema(
+        summary="Générer la facture en PDF",
+        description="Génère un PDF contenant la liste des articles",
+    )
     @action(
         detail=False,
         methods=("GET",),
@@ -86,12 +91,7 @@ class InvoiceViewSet(ModelViewSet):
                 for article in invoice.article.all()
             ],
         }
-
-        logo_url = "https://example.com/path/to/logo.png"
-        footer_message = "Thank you for your business! You're awesome!"
-        file_stream = InvoiceGenerator.generate_pretty_invoice(
-            data, logo_url, footer_message
-        )
+        file_stream = InvoiceGenerator.generate_pretty_invoice(data)
         response = HttpResponse(file_stream.read(), content_type="application/pdf")
         response[
             "Content-Disposition"
