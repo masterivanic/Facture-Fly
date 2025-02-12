@@ -18,7 +18,6 @@ export interface FlyUser {
     address: string;
     sector: string | null;
     phone: string;
-    user: number; // Reference to FlyUser ID
   }
   
   export interface Customer {
@@ -39,7 +38,6 @@ export interface FlyUser {
     price: number;
     description: string;
     user: number;
-    facture: number;
   }
   
   export interface Invoice {
@@ -74,7 +72,7 @@ export interface FlyUser {
   export interface InvoiceWithArticles {
     id: number;
     label: string;
-    emission_date: Date;
+    emission_date: Date ;
     amount: number;
     discount: number;
     taxe: number;

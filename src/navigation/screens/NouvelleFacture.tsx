@@ -9,8 +9,9 @@ import { Invoice, Customer, Article, InvoiceWithArticles } from '../../interface
 import { CustomDatePicker } from '../components/CustomDatePicker';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { getClient } from '../../api/auth';
-import { getArticlesByIds, getInvoiceById, updateInvoice } from '../../api/invoice';
+import { createDefaultInvoice, getArticlesByIds, getInvoiceById, updateInvoice } from '../../api/invoice';
 import debounce from 'lodash.debounce'
+import { transformInvoice } from '../../helpers';
 
 interface StateRef {
   emissionDate: Date;
@@ -102,6 +103,22 @@ const NouvelleFacture = ({route}: {route: any}) => {
           setItems(articles_data);
           setIsPaid(data.is_paid);
         }
+      }else{
+        //Its a new invoice
+        const data = await createDefaultInvoice();
+        if(data){
+          setInvoice(transformInvoice(data));
+          setInvoiceLibelle(data.label);
+          setEmissionDate(new Date(data.emission_date));
+          setDueDate(new Date(data.due_date));
+          setDiscount(data.discount || 0);
+          setTax(data.taxe || 0);
+          setPayments(data.paid_amount || 0);
+          setItems(data.article);
+          setIsPaid(data.is_paid);
+          setCustomer(null);
+          setSignature(null);
+        }
       }
     };
     fetchInvoice();
@@ -114,7 +131,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
     
     return {
       id: currentState.invoice.id,
-      label: currentState.invoiceLibelle, // Now correctly references updated label
+      label: currentState.invoiceLibelle, 
       emission_date: currentState.emissionDate,
       due_date: currentState.dueDate.toISOString().split('T')[0],
       discount: currentState.discount,
@@ -274,8 +291,9 @@ const NouvelleFacture = ({route}: {route: any}) => {
       try {
         const invoiceWithArticles = syncInvoice(currentState);
         if (invoiceWithArticles) {
-          await updateInvoice(invoiceWithArticles);
-          console.log('Updated invoice:', invoiceWithArticles.label);
+          if(invoiceWithArticles.label.length > 0) {
+            await updateInvoice(invoiceWithArticles);
+          }
         }
       } catch (error) {
         console.error('Update error:', error);
@@ -315,6 +333,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
         style={styles.invoiceNumber}
         value={invoiceLibelle}
         onChangeText={(text) => {
+          
           setInvoiceLibelle(text);
           debouncedUpdate();
         }}
