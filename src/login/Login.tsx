@@ -8,10 +8,12 @@ import {
   StyleSheet, 
   KeyboardAvoidingView, 
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { login } from '../api/auth';
 
 export function Login() {
   const navigation = useNavigation();
@@ -22,11 +24,16 @@ export function Login() {
 
   const handleLogin = async () => {
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    if(!email || !password){
+        Alert.alert('Veuillez remplir tous les champs');
+        setLoading(false);
+        return;
+    }
+    const response = await login(email, password);
+    if(response.status === 200){
+      navigation.navigate('HomeTabs');
       setLoading(false);
-      console.log(email, password);
-    }, 1500);
+    }
   };
 
   return (
