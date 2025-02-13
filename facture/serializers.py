@@ -80,32 +80,6 @@ class InvoiceCreateOrUpdateSerializer(serializers.ModelSerializer):
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
-    total_amount = serializers.SerializerMethodField()
-    remaining_amount = serializers.SerializerMethodField()
-    status = serializers.SerializerMethodField()
-
     class Meta:
         model = Invoice
         fields = "__all__"
-
-    def get_total_amount(self, obj) -> Decimal:
-        amount = float(obj.amount)
-        discount = float(obj.discount)
-        tax = float(obj.taxe)
-        amount_after_discount = amount * (1 - discount / 100)
-        final_amount = amount_after_discount + (1 + tax / 100)
-        return Decimal(final_amount)
-
-    def get_remaining_amount(self, obj) -> Decimal:
-        total = self.get_total_amount(obj)
-        paid = float(obj.paid_amount)
-        return Decimal(total - paid)
-
-    def get_status(self, obj) -> str:
-        remaining = self.get_remaining_amount(obj)
-        if remaining <= 0:
-            return "PAID"
-        elif obj.due_date and obj.due_date < timezone.now().date():
-            return "OVERDUE"
-        else:
-            return "PENDING"
