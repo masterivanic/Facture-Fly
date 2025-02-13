@@ -8,82 +8,83 @@ import { useFocusEffect } from '@react-navigation/native';
 
 
 const AppercuModelFacture = ({ route }: { route: any }) => {
-  const { factureId , refreshCount} = route.params || {};
+  const { factureId, refreshCount } = route.params || {};
   const [invoice, setInvoice] = useState<InvoiceWithArticles | null>(null);
   const [userCompany, setUserCompany] = useState<UserCompany | null>(null);
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [apayer_str, setApayerStr] = useState('');
-  
+
   useFocusEffect(
     useCallback(() => {
       const fetchInvoice = async () => {
         try {
           setLoading(true);
-        const userCompanyData = await getUserCompany();
-        setUserCompany(userCompanyData);
+          const userCompanyData = await getUserCompany();
+          console.log("userCompanyData", userCompanyData);
+          setUserCompany(userCompanyData);
 
-        if (factureId) {
-          const data = await getInvoiceById(factureId);
-          console.log("data", data.due_date);
-          if (data) {
-            
-            // Convert string amounts to numbers
-            const processedData = {
-              ...data,
-              amount: Number(data.amount),
-              discount: Number(data.discount),
-              taxe: Number(data.taxe),
-              paid_amount: Number(data.paid_amount),
-            };
+          if (factureId) {
+            const data = await getInvoiceById(factureId);
+            console.log("data", data.due_date);
+            if (data) {
 
-            // Fetch articles and customer in parallel
-            const [articles_data, client_data] = await Promise.all([
-              getArticlesByIds(data.article),
-              data.customer ? getClient(data.customer) : Promise.resolve(null)
-            ]);
+              // Convert string amounts to numbers
+              const processedData = {
+                ...data,
+                amount: Number(data.amount),
+                discount: Number(data.discount),
+                taxe: Number(data.taxe),
+                paid_amount: Number(data.paid_amount),
+              };
 
-            setInvoice({
-              ...processedData,
-              article: articles_data,
-              due_date:new Date(data.due_date).toISOString().split('T')[0], // Already in correct format
-              emission_date: new Date(data.emission_date)
-            });
+              // Fetch articles and customer in parallel
+              const [articles_data, client_data] = await Promise.all([
+                getArticlesByIds(data.article),
+                data.customer ? getClient(data.customer) : Promise.resolve(null)
+              ]);
 
-            if (client_data) {
-              setCustomer({
-                ...client_data,
-                // Ensure address exists
-                adress: client_data.adress || 'No address provided'
+              setInvoice({
+                ...processedData,
+                article: articles_data,
+                due_date: new Date(data.due_date).toISOString().split('T')[0], // Already in correct format
+                emission_date: new Date(data.emission_date)
               });
-            }
-            if (data.due_date == data.emission_date) {
-              setApayerStr("La facture est dûe dés la récéption");
-            }else if(new Date(data.due_date).getTime() > new Date().getTime()) {
-              const differenceInDays = Math.ceil((new Date(data.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-              setApayerStr(`Le paiement est dû dans ${differenceInDays} jours`);
-            }else {
-              setApayerStr('La facture est en retard, merci de nous contacter pour le paiement');
+
+              if (client_data) {
+                setCustomer({
+                  ...client_data,
+                  // Ensure address exists
+                  adress: client_data.adress || 'No address provided'
+                });
+              }
+              if (data.due_date == data.emission_date) {
+                setApayerStr("La facture est dûe dés la récéption");
+              } else if (new Date(data.due_date).getTime() > new Date().getTime()) {
+                const differenceInDays = Math.ceil((new Date(data.due_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                setApayerStr(`Le paiement est dû dans ${differenceInDays} jours`);
+              } else {
+                setApayerStr('La facture est en retard, merci de nous contacter pour le paiement');
+              }
             }
           }
+        } catch (error) {
+          console.error('Fetch error:', error);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error('Fetch error:', error);
-      } finally {
-        setLoading(false);
+      };
+
+      fetchInvoice();
+      return () => {
+        console.log("unmount");
       }
-    };
+    }, [refreshCount]))
 
-    fetchInvoice();
-    return () => {
-      console.log("unmount");
-    }
-  }, [refreshCount]))
 
-  
 
   if (loading) {
-    return <ActivityIndicator style={{flex: 1, justifyContent: 'center', alignItems: 'center'}} size="large" />;
+    return <ActivityIndicator style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} size="large" />;
   }
 
   if (!userCompany || !invoice) {
@@ -97,7 +98,7 @@ const AppercuModelFacture = ({ route }: { route: any }) => {
       .padStart(2, '0')}/${date.getFullYear()}`;
   };
 
-  const formatAddress = (address: string) => 
+  const formatAddress = (address: string) =>
     address.split(',').join('\n');
 
   // Calculations
@@ -106,112 +107,112 @@ const AppercuModelFacture = ({ route }: { route: any }) => {
   ) || 0;
   const totalTax = subtotal * (invoice.taxe / 100);
   const totalDiscount = subtotal * (invoice.discount / 100);
-  const tax = invoice ? (subtotal * invoice.taxe) / 100 : 0  
+  const tax = invoice ? (subtotal * invoice.taxe) / 100 : 0
   const total = subtotal - totalDiscount + totalTax;
-  const balanceDue = total - invoice.paid_amount;  
+  const balanceDue = total - invoice.paid_amount;
 
-  
+
   return (
     <ScrollView style={styles.container}>
       {/* Header Section */}
-     
+
       <View style={styles.header}>
-      {
-        userCompany && 
-        <View style={styles.companyInfo}>
-          <Text style={styles.companyName}>{userCompany.name}</Text>
-          <Text style={styles.companyAddress}>
-            {formatAddress(userCompany.address)}
-          </Text>
-        </View> 
-      }
-      {
-        customer && 
-        <View style={styles.billTo}>
-          <Text style={styles.sectionTitle}>À:</Text>
-          <Text style={styles.clientName}>
-            {customer?.first_name} {customer?.last_name}
-          </Text>
-          <Text style={styles.clientAddress}>
-            {formatAddress(customer?.adress || '')}
-          </Text>
-        </View>
-      }
+        {
+          userCompany &&
+          <View style={styles.companyInfo}>
+            <Text style={styles.companyName}>{userCompany.name}</Text>
+            <Text style={styles.companyAddress}>
+              {formatAddress(userCompany.address)}
+            </Text>
+          </View>
+        }
+        {
+          customer &&
+          <View style={styles.billTo}>
+            <Text style={styles.sectionTitle}>À:</Text>
+            <Text style={styles.clientName}>
+              {customer?.first_name} {customer?.last_name}
+            </Text>
+            <Text style={styles.clientAddress}>
+              {formatAddress(customer?.adress || '')}
+            </Text>
+          </View>
+        }
       </View>
 
       {/* Invoice Details */}
       {
-        invoice && 
-      <View style={styles.detailsContainer}>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Facture #</Text>
-          <Text style={styles.detailValue}>{invoice?.label}</Text>
+        invoice &&
+        <View style={styles.detailsContainer}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Facture #</Text>
+            <Text style={styles.detailValue}>{invoice?.label}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Date de facturation</Text>
+            <Text style={styles.detailValue}>{formatDate(invoice?.emission_date)}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>Date d'échéance</Text>
+            <Text style={styles.detailValue}>{formatDate(invoice?.due_date)}</Text>
+          </View>
         </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Date de facturation</Text>
-          <Text style={styles.detailValue}>{formatDate(invoice?.emission_date)}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Date d'échéance</Text>
-          <Text style={styles.detailValue}>{formatDate(invoice?.due_date)}</Text>
-        </View>
-      </View>
       }
 
       {/* Items Table */}
       {
-        invoice && 
-      <View style={styles.table}>
-        <View style={[styles.row, styles.headerRow]}>
-          <Text style={[styles.colQty, styles.headerText]}>QTE</Text>
-          <Text style={[styles.colDesc, styles.headerText]}>LIBELLE</Text>
-          <Text style={[styles.colPrice, styles.headerText]}>PRIX UNITAIRE</Text>
-          <Text style={[styles.colTotal, styles.headerText]}>MONTANT</Text>
-        </View>
-
-        {invoice.article.map((item: Article) => (
-          <View key={item.id} style={[styles.row, styles.itemRow]}>
-            <Text style={styles.colQty}>{Number(item.quantity)}</Text>
-            <Text style={styles.colDesc}>{item.label}</Text>
-            <Text style={styles.colPrice}>€{Number(item.price).toFixed(2)}</Text>
-            <Text style={styles.colTotal}>€{(Number(item.quantity) * Number(item.price)).toFixed(2)}</Text>
+        invoice &&
+        <View style={styles.table}>
+          <View style={[styles.row, styles.headerRow]}>
+            <Text style={[styles.colQty, styles.headerText]}>QTE</Text>
+            <Text style={[styles.colDesc, styles.headerText]}>LIBELLE</Text>
+            <Text style={[styles.colPrice, styles.headerText]}>PRIX UNITAIRE</Text>
+            <Text style={[styles.colTotal, styles.headerText]}>MONTANT</Text>
           </View>
-        ))}
-      </View>
+
+          {invoice.article.map((item: Article) => (
+            <View key={item.id} style={[styles.row, styles.itemRow]}>
+              <Text style={styles.colQty}>{Number(item.quantity)}</Text>
+              <Text style={styles.colDesc}>{item.label}</Text>
+              <Text style={styles.colPrice}>€{Number(item.price).toFixed(2)}</Text>
+              <Text style={styles.colTotal}>€{(Number(item.quantity) * Number(item.price)).toFixed(2)}</Text>
+            </View>
+          ))}
+        </View>
       }
 
       {/* Totals Section */}
       {
-        invoice && 
-      <View style={styles.totalsContainer}>
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Sous total</Text>
-          <Text style={styles.totalValue}>€{subtotal.toFixed(2)}</Text>
+        invoice &&
+        <View style={styles.totalsContainer}>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Sous total</Text>
+            <Text style={styles.totalValue}>€{subtotal.toFixed(2)}</Text>
+          </View>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Remise {invoice.discount}%</Text>
+            <Text style={styles.totalValue}>€{totalDiscount.toFixed(2)}</Text>
+          </View>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Taxe {invoice.taxe}%</Text>
+            <Text style={styles.totalValue}>€{tax.toFixed(2)}</Text>
+          </View>
+          <View style={[styles.totalRow, styles.grandTotal]}>
+            <Text style={styles.grandTotalLabel}>Total</Text>
+            <Text style={styles.grandTotalValue}>€{balanceDue.toFixed(2)}</Text>
+          </View>
         </View>
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Remise {invoice.discount}%</Text>
-          <Text style={styles.totalValue}>€{totalDiscount.toFixed(2)}</Text>
-        </View>
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>Taxe {invoice.taxe}%</Text>
-          <Text style={styles.totalValue}>€{tax.toFixed(2)}</Text>
-        </View>
-        <View style={[styles.totalRow, styles.grandTotal]}>
-          <Text style={styles.grandTotalLabel}>Total</Text>
-          <Text style={styles.grandTotalValue}>€{balanceDue.toFixed(2)}</Text>
-        </View>
-      </View>
       }
 
       {/* Payment Details */}
-        
+
       {
-        userCompany && 
-      <View style={styles.footer}>
-        <Text style={styles.terms}>Conditions de paiement</Text>
-        <Text style={styles.termsText}>{apayer_str}</Text>
-        <Text style={styles.termsText}>Veuillez faire les chèques payable à: {userCompany?.name}</Text>
-      </View>
+        userCompany &&
+        <View style={styles.footer}>
+          <Text style={styles.terms}>Conditions de paiement</Text>
+          <Text style={styles.termsText}>{apayer_str}</Text>
+          <Text style={styles.termsText}>Veuillez faire les chèques payable à: {userCompany?.name}</Text>
+        </View>
       }
     </ScrollView>
   );
