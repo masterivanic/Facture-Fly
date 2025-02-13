@@ -401,7 +401,7 @@ const NouvelleFacture = ({ route }: { route: any }) => {
         fileUri,
         {
           headers: {
-            Accept: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            Accept: 'application/json',
             Authorization: `Bearer ${token}`,
           },
         }
