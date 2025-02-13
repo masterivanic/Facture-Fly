@@ -80,6 +80,8 @@ const AppercuModelFacture = ({ route }: { route: any }) => {
     }
   }, [refreshCount]))
 
+  
+
   if (loading) {
     return <ActivityIndicator style={{flex: 1, justifyContent: 'center', alignItems: 'center'}} size="large" />;
   }
@@ -290,6 +292,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
   },
   headerText: {
+    fontSize: 11,
     fontWeight: 'bold',
     color: '#333',
   },

@@ -47,8 +47,8 @@ const FactureTabs = () => {
     >
 
       <FactureTopTabs.Screen name="TOUTES" component={Factures} />
-      <FactureTopTabs.Screen name="PAYEES" component={Updates} />
-      <FactureTopTabs.Screen name="NON PAYEES" component={Updates} />
+      <FactureTopTabs.Screen name="PAYEES" component={Factures} initialParams={{isPaidParam: true}}/>
+      <FactureTopTabs.Screen name="NON PAYEES" component={Factures} initialParams={{isPaidParam: false}}/>
     </FactureTopTabs.Navigator>
   );
 };

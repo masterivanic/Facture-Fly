@@ -19,7 +19,8 @@ import { getInvoices } from '../../api/invoice';
 import { InvoiceDisplayed, MonthlyInvoices } from '../../interfaces';
 import { useNavigation } from '@react-navigation/native';
 
-export function Factures() {
+export function Factures({route}: {route: any}) {
+  const {isPaidParam} = route.params || {};
   const [factures, setFactures] = useState<MonthlyInvoices[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -27,7 +28,16 @@ export function Factures() {
   const fetchInvoices = async () => {
     try {
       const results = await getInvoices();
-      const transformedData = results ? await transformInvoices(results) : [];
+      let filteredResults = results || [];
+
+      // Apply filtering based on isPaidParam
+      if (typeof isPaidParam === 'boolean') {
+        filteredResults = filteredResults.filter(invoice => 
+          invoice.is_paid === isPaidParam
+        );
+      }
+
+      const transformedData = await transformInvoices(filteredResults);
       setFactures(transformedData);
     } catch (error) {
       console.error("Error fetching invoices:", error);
@@ -37,6 +47,7 @@ export function Factures() {
     }
   };
 
+
   const handleRefresh = () => {
     setRefreshing(true);
     fetchInvoices();
@@ -44,7 +55,7 @@ export function Factures() {
 
   useEffect(() => {
     fetchInvoices();
-  }, []);
+  }, [isPaidParam]);
 
   if (loading) {
     return (
