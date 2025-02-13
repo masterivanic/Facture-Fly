@@ -49,9 +49,18 @@ export const capitalizeFirstLetter = (text: string) => text.charAt(0).toUpperCas
  */
 export function transformInvoice(invoiceWithArticles: InvoiceWithArticles): Invoice {
   return {
-    ...invoiceWithArticles,
-    emission_date: new Date(invoiceWithArticles.emission_date), // Convert to Date
-    due_date: new Date(invoiceWithArticles.due_date),
-    article: invoiceWithArticles.article.map(article => article.id)
+    id: invoiceWithArticles.id,
+    label: invoiceWithArticles.label,
+    emission_date: invoiceWithArticles.emission_date, // Assuming it's already a Date
+    amount: invoiceWithArticles.amount,
+    discount: invoiceWithArticles.discount,
+    taxe: invoiceWithArticles.taxe,
+    paid_amount: invoiceWithArticles.paid_amount,
+    signature: invoiceWithArticles.signature,
+    due_date: new Date(invoiceWithArticles.due_date), // Convert string to Date
+    is_paid: invoiceWithArticles.is_paid,
+    user: invoiceWithArticles.user,
+    customer: invoiceWithArticles.customer,
+    article: invoiceWithArticles.article.map(article => article.id) // Extract article ids
   };
 }

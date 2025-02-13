@@ -1,32 +1,52 @@
-import { Button, Text } from '@react-navigation/elements';
+import { 
+  Button, 
+  Text 
+} from '@react-navigation/elements';
 import { useEffect, useState } from 'react';
-import { FlatList, StatusBar, StyleSheet, View, TouchableOpacity, RefreshControl } from 'react-native';
+import { 
+  FlatList, 
+  StatusBar, 
+  StyleSheet, 
+  View, 
+  TouchableOpacity, 
+  RefreshControl, 
+  ActivityIndicator
+} from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { globalStyles } from '../../styles/global';
 import { formatCurrency, transformInvoices } from '../../helpers';
-import axios from "axios";
-import {getInvoices} from '../../api/invoice';
+import { getInvoices } from '../../api/invoice';
 import { InvoiceDisplayed, MonthlyInvoices } from '../../interfaces';
 import { useNavigation } from '@react-navigation/native';
 
-
-export function Factures() {
+export function Factures({route}: {route: any}) {
+  const {isPaidParam} = route.params || {};
   const [factures, setFactures] = useState<MonthlyInvoices[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchInvoices = async () => {
     try {
       const results = await getInvoices();
-      if (results) {
-        const transformedData = await transformInvoices(results);
-        setFactures(transformedData);
+      let filteredResults = results || [];
+
+      // Apply filtering based on isPaidParam
+      if (typeof isPaidParam === 'boolean') {
+        filteredResults = filteredResults.filter(invoice => 
+          invoice.is_paid === isPaidParam
+        );
       }
+
+      const transformedData = await transformInvoices(filteredResults);
+      setFactures(transformedData);
     } catch (error) {
       console.error("Error fetching invoices:", error);
     } finally {
+      setLoading(false);
       setRefreshing(false);
     }
   };
+
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -35,11 +55,20 @@ export function Factures() {
 
   useEffect(() => {
     fetchInvoices();
-  }, []);
+  }, [isPaidParam]);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator style={{flex: 1, justifyContent: 'center', alignItems: 'center'}} size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#00E5E5" />
+      
       {factures.length > 0 ? (
         <FacturesList 
           invoices={factures} 
@@ -47,9 +76,9 @@ export function Factures() {
           refreshing={refreshing}
         />
       ) : (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', gap: 20 }}>
+        <View style={styles.emptyState}>
           <FontAwesome name="search-minus" size={42} color="black" />
-          <Text style={{ fontSize: 16, textAlign: 'center' }}>
+          <Text style={styles.emptyText}>
             Vos factures s’afficheront ici. Cliquez sur le bouton plus pour créer une nouvelle facture
           </Text>
         </View>
@@ -68,7 +97,6 @@ const FacturesList = ({
   refreshing: boolean; 
 }) => {
   const navigation = useNavigation();
-  
 
   const handleInvoicePress = (item: InvoiceDisplayed) => {
     navigation.reset({
@@ -98,46 +126,56 @@ const FacturesList = ({
         data={item.data}
         renderItem={renderInvoice}
         keyExtractor={(invoice, index) => `${item.month}-${index}`}
-        scrollEnabled={false} // Disable nested scrolling
+        scrollEnabled={false}
       />
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={invoices}
-        renderItem={renderSection}
-        keyExtractor={(item, index) => `${item.month}-${index}`}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#00E5E5']} // Customize refresh indicator color
-            tintColor="#00E5E5" // iOS only
-            title="Chargement..." // iOS only
-            titleColor="#666" // iOS only
-          />
-        }
-        // Improve scroll performance
-        initialNumToRender={5}
-        maxToRenderPerBatch={5}
-        windowSize={10}
-      />
-    </View>
+    <FlatList
+      data={invoices}
+      renderItem={renderSection}
+      keyExtractor={(item, index) => `${item.month}-${index}`}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={['#00E5E5']}
+          tintColor="#00E5E5"
+          title="Chargement..."
+          titleColor="#666"
+        />
+      }
+      initialNumToRender={5}
+      maxToRenderPerBatch={5}
+      windowSize={10}
+    />
   );
 };
-{/* <Button screen="Profile" params={{ user: 'jane' }}>
-        Go to Profile
-      </Button>
-      <Button screen="Settings">Go to Settings</Button> */}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'stretch',
-    margin:4,
+    margin: 4,
     gap: 10,
-    backgroundColor:'#CFDEEC'
+    backgroundColor: '#CFDEEC'
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#CFDEEC'
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 20,
+    paddingHorizontal: 20
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#666'
+  }
 });
