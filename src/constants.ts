@@ -1,2 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export const API_URL="https://srrkx1jf-8080.uks1.devtunnels.ms/api"
-export const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzM5NDA3NjM1LCJpYXQiOjE3MzkzOTY4MzUsImp0aSI6ImUxMDJlMTEwOTM2MTQ4NTliZjE5MmQzNmNjZTA3YzNhIiwidXNlcl9pZCI6MX0.op7AgHpKMwryviOTmBIVmkH0BUnqHmUSN_zNfoW1tNA"
+export const TOKEN = AsyncStorage.getItem('accessToken')

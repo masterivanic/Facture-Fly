@@ -1,6 +1,9 @@
 import axios from "axios";
-import { API_URL, TOKEN } from "../constants";
+import { API_URL } from "../constants";
 import { Article, Invoice, InvoiceWithArticles } from "../interfaces";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const TOKEN = AsyncStorage.getItem('accessToken')
 
 export const getInvoices = async () => {
     const response = await axios.get(`${API_URL}/facturation/invoice/`,{

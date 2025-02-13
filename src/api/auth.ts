@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { Customer, UserCompany } from '../interfaces';
-import { API_URL, TOKEN } from '../constants';
-
+import { API_URL } from '../constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+const TOKEN = AsyncStorage.getItem('accessToken')
 export const getClient = async (clientId: number) => {
     const response = await axios.get(`${API_URL}/auth/customer/${clientId}/`,{
         headers: {
@@ -40,4 +41,23 @@ export const getUserCompany = async () => {
         },
     });
     return response.data.results[0] as UserCompany;
+}
+
+export const login = async (email: string, password: string) => {
+    const response = await axios.post(`${API_URL}/auth/login/`, { email, password });
+    AsyncStorage.setItem('accessToken', response.data.access);
+    AsyncStorage.setItem('refreshToken', response.data.refresh);
+    return response.data;
+}
+
+export const refreshToken = async () => {
+  const refreshToken = await AsyncStorage.getItem('refreshToken');
+    const response = await axios.post(`${API_URL}/auth/refresh/`, {
+        headers: {
+          Authorization: `Bearer ${refreshToken}`, 
+          "Content-Type": "application/json", 
+        },
+    });
+    AsyncStorage.setItem('accessToken', response.data.access);
+    AsyncStorage.setItem('refreshToken', response.data.refresh);
 }
