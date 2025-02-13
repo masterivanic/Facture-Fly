@@ -136,8 +136,8 @@ dmypy.json
 .vscode/
 
 #django rest static file
-static/
 static/admin
+static/assets
 static/django_extensions
 static/rest_framework
 

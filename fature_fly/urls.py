@@ -21,3 +21,8 @@ urlpatterns = [
         name="redoc",
     ),
 ]
+
+
+admin.site.site_header = "Facture Fly admin"
+admin.site.site_title = "Facture Fly Portal"
+admin.site.index_title = "Facture Fly dashboard"

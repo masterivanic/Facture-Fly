@@ -17,6 +17,7 @@ class ArticleAdmin(admin.ModelAdmin):
 
 @admin.register(Invoice)
 class InvoiceAdmin(admin.ModelAdmin):
+    date_hierarchy = "created_at"
     list_display = ("label", "amount", "taxe", "due_date", "user", "customer")
     search_fields = ("label", "user", "customer")
     list_filter = ("user", "customer")
