@@ -392,7 +392,7 @@ const NouvelleFacture = ({ route }: { route: any }) => {
     try {
       // 1. Define API URL and local file path
       const apiUrl = `${API_URL}/facturation/invoice/preview/${invoice?.id}/`;
-      const fileUri = FileSystem.documentDirectory + 'invoice_Facture.docx';
+      const fileUri = FileSystem.documentDirectory + `invoice_Facture-${invoice?.label}.pdf`;
 
       // 2. Download the file from API
       const token = await getAccessToken()
