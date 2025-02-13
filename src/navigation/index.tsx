@@ -47,17 +47,17 @@ const FactureTabs = () => {
     >
 
       <FactureTopTabs.Screen name="TOUTES" component={Factures} />
-      <FactureTopTabs.Screen name="PAYEES" component={Factures} initialParams={{isPaidParam: true}}/>
-      <FactureTopTabs.Screen name="NON PAYEES" component={Factures} initialParams={{isPaidParam: false}}/>
+      <FactureTopTabs.Screen name="PAYEES" component={Factures} initialParams={{ isPaidParam: true }} />
+      <FactureTopTabs.Screen name="NON PAYEES" component={Factures} initialParams={{ isPaidParam: false }} />
     </FactureTopTabs.Navigator>
   );
 };
 
 const NouvelleFactureTopTabs = createMaterialTopTabNavigator();
-const NouvelleFactureTabs = ({route}: {route: any}) => {
+const NouvelleFactureTabs = ({ route }: { route: any }) => {
   // Get the passed params
-  
-  const {clientId, factureId} = route.params || {};
+
+  const { clientId, factureId } = route.params || {};
   const [refreshKey, setRefreshKey] = useState(Date.now());
   useEffect(() => {
     setRefreshKey(Date.now());
@@ -73,16 +73,16 @@ const NouvelleFactureTabs = ({route}: {route: any}) => {
       }}
     >
 
-      <FactureTopTabs.Screen name="EDITION" 
-      component={Nouvellefacture}
-      initialParams={{ clientId: clientId , factureId: factureId}}/>
+      <FactureTopTabs.Screen name="EDITION"
+        component={Nouvellefacture}
+        initialParams={{ clientId: clientId, factureId: factureId }} />
 
       <FactureTopTabs.Screen name={"APERÇU"}
-      component={AppercuModelFacture} 
-      initialParams={{factureId: factureId, refreshKey: refreshCount}}
-      listeners={{
-        tabPress: () => setRefreshCount(prev => prev + 1)
-      }}
+        component={AppercuModelFacture}
+        initialParams={{ factureId: factureId, refreshKey: refreshCount }}
+        listeners={{
+          tabPress: () => setRefreshCount(prev => prev + 1)
+        }}
       />
     </FactureTopTabs.Navigator>
   );
@@ -120,7 +120,7 @@ const HomeTabs = createBottomTabNavigator({
     Nouveau: {
       screen: NouvelleFactureTabs,
       options: {
-        
+
         header: ({ navigation, route }) => (
           <SafeAreaView>
             <FactureCreationHeader title="Facture"
@@ -151,8 +151,8 @@ const ClientsStackScreen = () => {
   return (
     <Stack.Navigator screenOptions={
       {
-        
-        headerShown:false,
+
+        headerShown: false,
         headerStyle: {
           backgroundColor: '#00E5E5',
         },
@@ -162,16 +162,29 @@ const ClientsStackScreen = () => {
         },
       }
     }>
-      <Stack.Screen 
-      
-      name="Clients" component={ClientsScreen} />
+      <Stack.Screen
+
+        name="Clients" component={ClientsScreen} />
       <Stack.Screen name="ClientDetail" component={ClientDetailScreen} />
     </Stack.Navigator>
   );
 }
 const RootStack = createNativeStackNavigator({
   screens: {
-    
+    Login: {
+      screen: Login,
+      options: {
+        headerShown: false,
+        title: 'Login',
+      },
+    },
+    CreateAccount: {
+      screen: CreateAccount,
+      options: {
+        headerShown: false,
+        title: 'CreateAccount',
+      },
+    },
     CreateHome: {
       screen: CreateHome,
       options: {
@@ -209,20 +222,7 @@ const RootStack = createNativeStackNavigator({
       },
     },
 
-    Login: {
-      screen: Login,
-      options: {
-        headerShown: false,
-        title: 'Login',
-      },
-    },
-    CreateAccount: {
-      screen: CreateAccount,
-      options: {
-        headerShown: false,
-        title: 'CreateAccount',
-      },
-    },
+
     ClientsStack: {
       screen: ClientsStackScreen,
       options: {

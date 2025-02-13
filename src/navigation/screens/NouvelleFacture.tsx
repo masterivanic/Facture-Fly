@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Platform, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, StatusBar, Platform, Switch, Alert } from 'react-native';
 import Signature from 'react-native-signature-canvas';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -8,10 +8,15 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Invoice, Customer, Article, InvoiceWithArticles } from '../../interfaces';
 import { CustomDatePicker } from '../components/CustomDatePicker';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { getClient } from '../../api/auth';
+import { getAccessToken, getClient } from '../../api/auth';
 import { createDefaultInvoice, getArticlesByIds, getInvoiceById, updateInvoice } from '../../api/invoice';
 import debounce from 'lodash.debounce'
 import { transformInvoice } from '../../helpers';
+import { Share } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { API_URL } from '../../constants';
+
 
 interface StateRef {
   emissionDate: Date;
@@ -41,7 +46,7 @@ interface InvoiceState {
   invoice: Invoice | null;
 }
 
-const NouvelleFacture = ({route}: {route: any}) => {
+const NouvelleFacture = ({ route }: { route: any }) => {
   const { clientId, factureId } = route.params || {};
   const [initialLoad, setInitialLoad] = useState(true);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
@@ -74,7 +79,15 @@ const NouvelleFacture = ({route}: {route: any}) => {
     const fetchClient = async () => {
       if (clientId) {
         const data = await getClient(clientId);
-        data && setCustomer(data);
+        if (data) {
+          setCustomer(data);
+          const currentState = stateRef.current;
+          currentState.customer = data;
+          const invoiceData = syncInvoice(currentState);
+          if (invoiceData) {
+            await updateInvoice(invoiceData);
+          }
+        }
       }
     };
     fetchClient();
@@ -93,11 +106,11 @@ const NouvelleFacture = ({route}: {route: any}) => {
               const client_data = await getClient(invoiceData.customer);
               client_data && setCustomer(client_data);
             }
-            
+
             // Date comparison to prevent unnecessary updates
             const newEmissionDate = new Date(invoiceData.emission_date);
             const newDueDate = new Date(invoiceData.due_date);
-            
+
             setInvoice(invoiceData);
             setInvoiceLibelle(invoiceData.label);
             if (newEmissionDate.getTime() !== emissionDate.getTime()) {
@@ -131,7 +144,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
         setInitialLoad(false);
       }
     };
-    
+
     fetchInvoice();
   }, [factureId]);
   const updateField = async (field: keyof InvoiceState, value: any) => {
@@ -145,10 +158,10 @@ const NouvelleFacture = ({route}: {route: any}) => {
 
   const syncInvoice = (currentState: InvoiceState): InvoiceWithArticles | null => {
     if (!currentState.invoice) return null;
-    
+
     return {
       id: currentState.invoice.id,
-      label: currentState.invoiceLibelle, 
+      label: currentState.invoiceLibelle,
       emission_date: currentState.emissionDate,
       due_date: currentState.dueDate.toISOString().split('T')[0],
       discount: currentState.discount,
@@ -163,7 +176,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
     };
   };
 
- 
+
   const calculateTotal = (item: Article) => item.quantity * item.price;
 
   const subtotal = items.reduce((sum, item) => sum + calculateTotal(item), 0);
@@ -172,7 +185,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
   const total = subtotal - totalDiscount + totalTax;
   const balanceDue = total - payments;
 
-  
+
   const invoiceState: InvoiceState = {
     invoiceLibelle,
     emissionDate,
@@ -229,7 +242,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
     const newItems = items.map(item =>
       item.id === id ? { ...item, [field]: value } : item
     );
-    
+
     setItems(newItems);
     const currentState = stateRef.current;
     currentState.items = newItems;
@@ -259,10 +272,10 @@ const NouvelleFacture = ({route}: {route: any}) => {
   const updateApayerStr = () => {
     if (dueDate.getTime() == emissionDate.getTime()) {
       setApayerStr('À payer dés la récéption');
-    }else if(dueDate.getTime() > new Date().getTime()) {
+    } else if (dueDate.getTime() > new Date().getTime()) {
       const differenceInDays = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
       setApayerStr(`À payer dans ${differenceInDays} jours`);
-    }else {
+    } else {
       setApayerStr('Facture en retard');
     }
   }
@@ -272,85 +285,154 @@ const NouvelleFacture = ({route}: {route: any}) => {
   const navigation = useNavigation();
 
   const handleCustomeSelection = () => {
-    if(customer != null) {
+    if (customer != null) {
       navigation.reset({
         index: 0,
-        routes: [{ name: 'ClientsStack', params: { screen: 'ClientDetail' , params: { clientId: customer.id , factureId: invoice?.id } } }]
+        routes: [{ name: 'ClientsStack', params: { screen: 'ClientDetail', params: { clientId: customer.id, factureId: invoice?.id } } }]
       });
-    }else {
+    } else {
       navigation.reset({
         index: 0,
-        routes: [{ name: 'ClientsStack', params: { screen: 'Clients',  params: { factureId: invoice?.id } }} ]
+        routes: [{ name: 'ClientsStack', params: { screen: 'Clients', params: { factureId: invoice?.id } } }]
       });
     }
   }
-  
-  
+
+
   // Create a custom hook for state management
   function useInvoiceStateRef(initialState: InvoiceState) {
     const stateRef = useRef<InvoiceState>(initialState);
-    
+
     // Update ref on every render
     useEffect(() => {
       stateRef.current = initialState;
     });
-  
+
     return stateRef;
   }
-  
-    const debouncedUpdate = useMemo(
-      () => debounce(() => {
-        updateInvoiceLabel(stateRef.current);
-      }, 500),
-      [] 
-    );
-  
-    async function updateInvoiceLabel(currentState: InvoiceState) {
-      try {
-        const invoiceWithArticles = syncInvoice(currentState);
-        if (invoiceWithArticles) {
-          if(invoiceWithArticles.label.length > 0) {
-            await updateInvoice(invoiceWithArticles);
-          }
+
+  const debouncedUpdate = useMemo(
+    () => debounce(() => {
+      updateInvoiceLabel(stateRef.current);
+    }, 500),
+    []
+  );
+
+  async function updateInvoiceLabel(currentState: InvoiceState) {
+    try {
+      const invoiceWithArticles = syncInvoice(currentState);
+      if (invoiceWithArticles) {
+        if (invoiceWithArticles.label.length > 0) {
+          await updateInvoice(invoiceWithArticles);
         }
-      } catch (error) {
-        console.error('Update error:', error);
       }
+    } catch (error) {
+      console.error('Update error:', error);
     }
-    
-    useEffect(() => {
-      if (emissionDateFirstUpdate.current) {
-        emissionDateFirstUpdate.current = false;
+  }
+
+  useEffect(() => {
+    if (emissionDateFirstUpdate.current) {
+      emissionDateFirstUpdate.current = false;
+      return;
+    }
+    if (!initialLoad) {
+      updateField('emissionDate', emissionDate);
+    }
+  }, [emissionDate]);
+
+
+  useEffect(() => {
+    if (dueDateFirstUpdate.current) {
+      dueDateFirstUpdate.current = false;
+      return;
+    }
+    if (!initialLoad) {
+      updateField('dueDate', dueDate);
+    }
+  }, [dueDate]);
+  useEffect(() => {
+    emissionDateFirstUpdate.current = true;
+    dueDateFirstUpdate.current = true;
+  }, [factureId]);
+
+  const handlePaidStatusChange = async (value: boolean) => {
+    if (initialLoad) return;
+
+    setIsPaid(value);
+    const currentState = stateRef.current;
+    const data = syncInvoice({ ...currentState, isPaid: value });
+    data && await updateInvoice(data);
+  };
+  const shareContent = async () => {
+    try {
+      const result = await Share.share({
+        message: 'Check out this awesome app!',
+        title: 'Share via',
+        url: 'https://expo.dev' // iOS only for URL
+      });
+
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // Shared with activity type (iOS specific)
+          console.log('Shared with', result.activityType);
+        } else {
+          // Shared successfully
+          console.log('Share completed');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // Share dismissed
+        console.log('Share dismissed');
+      }
+    } catch (error: any) {
+      console.error('Error sharing:', error.message);
+    }
+  };
+  const handleShare = async () => {
+    try {
+      // 1. Define API URL and local file path
+      const apiUrl = `${API_URL}/facturation/invoice/preview/${invoice?.id}/`;
+      const fileUri = FileSystem.documentDirectory + 'invoice_Facture.docx';
+
+      // 2. Download the file from API
+      const token = await getAccessToken()
+      const downloadResult = await FileSystem.downloadAsync(
+        apiUrl,
+        fileUri,
+        {
+          headers: {
+            Accept: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // 3. Check if file downloaded successfully
+      if (downloadResult.status !== 200) {
+        throw new Error('Failed to download file');
+      }
+
+      // 4. Check if sharing is available
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert('Sharing not available on this device');
         return;
       }
-      if (!initialLoad) {
-        updateField('emissionDate', emissionDate);
-      }
-    }, [emissionDate]);
-    
-  
-    useEffect(() => {
-      if (dueDateFirstUpdate.current) {
-        dueDateFirstUpdate.current = false;
-        return;
-      }
-      if (!initialLoad) {
-        updateField('dueDate', dueDate);
-      }
-    }, [dueDate]);
-    useEffect(() => {
-      emissionDateFirstUpdate.current = true;
-      dueDateFirstUpdate.current = true;
-    }, [factureId]);
-  
-    const handlePaidStatusChange = async (value: boolean) => {
-      if (initialLoad) return;
-      
-      setIsPaid(value);
-      const currentState = stateRef.current;
-      const data = syncInvoice({ ...currentState, isPaid: value });
-      data && await updateInvoice(data);
-    };
+
+      // 5. Share the file
+      await Sharing.shareAsync(fileUri, {
+        mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        dialogTitle: 'Share Invoice',
+        UTI: 'com.microsoft.word.doc' // iOS specific
+      });
+
+    } catch (error: any) {
+      Alert.alert('Error', error.message);
+      console.error('Sharing failed:', error);
+    }
+  };
+
+
+
   return (
     <ScrollView
       scrollEnabled={!isSigning}
@@ -362,32 +444,32 @@ const NouvelleFacture = ({route}: {route: any}) => {
       />
       {/* Header Section */}
       <View style={styles.header}>
-      <TextInput
-        style={styles.invoiceNumber}
-        value={invoiceLibelle}
-        onChangeText={(text) => {
-          
-          setInvoiceLibelle(text);
-          debouncedUpdate();
-        }}
-        placeholder="Libellé de la facture"
-      />
+        <TextInput
+          style={styles.invoiceNumber}
+          value={invoiceLibelle}
+          onChangeText={(text) => {
+
+            setInvoiceLibelle(text);
+            debouncedUpdate();
+          }}
+          placeholder="Libellé de la facture"
+        />
         <Text style={styles.apayer}>{apayer_str}</Text>
       </View>
       <View style={styles.section}>
-        <Text style={{fontWeight: '500', fontSize: 16}}>Date D'émission</Text>
+        <Text style={{ fontWeight: '500', fontSize: 16 }}>Date D'émission</Text>
         <CustomDatePicker date={emissionDate} setDate={setEmissionDate} />
       </View>
       {/* Due Date Section */}
       <View style={styles.section}>
-        <Text style={{fontWeight: '500', fontSize: 16}}>Date D'échéance</Text>
+        <Text style={{ fontWeight: '500', fontSize: 16 }}>Date D'échéance</Text>
         <CustomDatePicker date={dueDate} setDate={setDueDate} />
       </View>
 
       {/* Date and Client Section */}
       {/* TODO Add a date picker component */}
       <View style={styles.section}>
-      <Text style={{fontWeight: '500', fontSize: 16}}>Client</Text>
+        <Text style={{ fontWeight: '500', fontSize: 16 }}>Client</Text>
         <TouchableOpacity onPress={handleCustomeSelection}>
           {customer == null ? <Text>Sélectionner un client</Text> : <Text>{customer?.first_name} {customer?.last_name}</Text>}
         </TouchableOpacity>
@@ -476,11 +558,11 @@ const NouvelleFacture = ({route}: {route: any}) => {
         </View>
         <View style={styles.totalRow}>
           <Text>Remise</Text>
-          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TextInput
               keyboardType="numeric"
               value={String(discount)}
-              onChangeText={ async (text) => {
+              onChangeText={async (text) => {
                 setDiscount(Number(text));
                 const currentState = stateRef.current;
                 currentState.discount = Number(text);
@@ -493,11 +575,11 @@ const NouvelleFacture = ({route}: {route: any}) => {
         </View>
         <View style={styles.totalRow}>
           <Text>Taxe</Text>
-          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <TextInput
               keyboardType="numeric"
               value={String(tax)}
-              onChangeText={ async (text) => {
+              onChangeText={async (text) => {
                 setTax(Number(text));
                 const currentState = stateRef.current;
                 currentState.tax = Number(text);
@@ -517,7 +599,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
           <TextInput
             keyboardType="numeric"
             value={String(payments)}
-            onChangeText={ async (text) => {
+            onChangeText={async (text) => {
               setPayments(Number(text));
               const currentState = stateRef.current;
               currentState.payments = Number(text);
@@ -536,22 +618,22 @@ const NouvelleFacture = ({route}: {route: any}) => {
       <View style={styles.signatureContainer}>
         <Text style={styles.sectionTitle}>Signature</Text>
         <Signature
-        key={signatureKey} // remounts the component when key changes
-        onBegin={() => setIsSigning(true)}
-        onEnd={() => setIsSigning(false)}
-        onOK={handleSignature}
-        style={styles.signatureBox}
-        descriptionText="Hello"
-        clearText="Effacer"
-        confirmText="Confirmer"
-        penColor="#000"
-        backgroundColor="#f8f8f8"
-      />
+          key={signatureKey} // remounts the component when key changes
+          onBegin={() => setIsSigning(true)}
+          onEnd={() => setIsSigning(false)}
+          onOK={handleSignature}
+          style={styles.signatureBox}
+          descriptionText="Hello"
+          clearText="Effacer"
+          confirmText="Confirmer"
+          penColor="#000"
+          backgroundColor="#f8f8f8"
+        />
       </View>
 
       {/* Send Button */}
-      <TouchableOpacity style={styles.sendButton}>
-        <Text style={styles.sendButtonText}>Envoyer</Text>
+      <TouchableOpacity onPress={handleShare} style={styles.sendButton}>
+        <Text style={styles.sendButtonText} >Envoyer</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -561,7 +643,7 @@ const NouvelleFacture = ({route}: {route: any}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor:'#CFDEEC',
+    backgroundColor: '#CFDEEC',
     padding: 15,
   },
   change: {
@@ -592,7 +674,7 @@ const styles = StyleSheet.create({
   },
   section: {
     flexDirection: 'row',
-    alignItems: 'center', 
+    alignItems: 'center',
     backgroundColor: '#f8f9fa',
     borderRadius: 8,
     padding: 15,

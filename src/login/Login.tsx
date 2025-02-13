@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  TextInput, 
-  Image, 
-  StyleSheet, 
-  KeyboardAvoidingView, 
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  Image,
+  StyleSheet,
+  KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
   Alert
@@ -21,18 +21,34 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+
+  /* useEffect(() => {
+    const token = TOKEN
+    if (token != null) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'HomeTabs' }]
+      })
+    }
+  }, []) */
 
   const handleLogin = async () => {
+
     setLoading(true);
-    if(!email || !password){
-        Alert.alert('Veuillez remplir tous les champs');
-        setLoading(false);
-        return;
+    if (!email || !password) {
+      Alert.alert('Veuillez remplir tous les champs');
+      setLoading(false);
+      return;
     }
     const response = await login(email, password);
-    if(response.status === 200){
-      navigation.navigate('HomeTabs');
+    console.log("from login", response.status)
+    if (response.status == 200 || response.status == 201) {
+      navigation.reset({ index: 0, routes: [{ name: 'HomeTabs' }] })
       setLoading(false);
+    } else {
+      setLoading(false);
+      console.log('error');
     }
   };
 
@@ -79,14 +95,14 @@ export function Login() {
               value={password}
               onChangeText={setPassword}
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}
               style={styles.eyeIcon}
             >
-              <Ionicons 
-                name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
-                size={20} 
-                color="#64748B" 
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color="#64748B"
               />
             </TouchableOpacity>
           </View>
@@ -97,7 +113,7 @@ export function Login() {
           </TouchableOpacity>
 
           {/* Login Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.button, loading && styles.disabledButton]}
             onPress={handleLogin}
             disabled={loading}
@@ -113,11 +129,8 @@ export function Login() {
         {/* Sign Up Section */}
         <View style={styles.signUpContainer}>
           <Text style={styles.signUpText}>Vous n'avez pas de compte ? </Text>
-          <TouchableOpacity 
-            onPress={() => navigation.reset({
-                index: 0,
-                routes: [{ name: 'Auth', params: { screen: 'CreateAccount' } }]
-            })}
+          <TouchableOpacity
+            onPress={() => navigation.reset({ index: 0, routes: [{ name: 'CreateAccount' }] })}
           >
             <Text style={styles.linkText}>Créer un compte</Text>
           </TouchableOpacity>
