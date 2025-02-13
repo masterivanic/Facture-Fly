@@ -3,6 +3,7 @@ import { HeaderButton, Text } from '@react-navigation/elements';
 import {
   createStaticNavigation,
   StaticParamList,
+  useRoute,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Image, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -25,7 +26,13 @@ import AppercuModelFacture from './screens/AppercuModelFacture';
 import { Home } from '../acceuil/Home';
 import { Bienvenu } from '../bienvenu/Bienvenu';
 import { UploadLogo } from '../uploadLogo/UploadLogo';
-
+import { Login } from '../login/Login';
+import { CreateAccount } from '../createAccount/CreateAccount';
+import { CreateHome } from '../createAccount/CreateHome';
+import ClientsScreen from './screens/clients/ClientsScreen';
+import ClientDetailScreen from './screens/clients/ClientDetailScreen';
+import { useEffect, useState } from 'react';
+import { InvoiceWithArticles } from '../interfaces';
 
 
 const FactureTopTabs = createMaterialTopTabNavigator();
@@ -40,14 +47,22 @@ const FactureTabs = () => {
     >
 
       <FactureTopTabs.Screen name="TOUTES" component={Factures} />
-      <FactureTopTabs.Screen name="PAYEES" component={Updates} />
-      <FactureTopTabs.Screen name="NON PAYEES" component={Updates} />
+      <FactureTopTabs.Screen name="PAYEES" component={Factures} initialParams={{ isPaidParam: true }} />
+      <FactureTopTabs.Screen name="NON PAYEES" component={Factures} initialParams={{ isPaidParam: false }} />
     </FactureTopTabs.Navigator>
   );
 };
 
 const NouvelleFactureTopTabs = createMaterialTopTabNavigator();
-const NouvelleFactureTabs = () => {
+const NouvelleFactureTabs = ({ route }: { route: any }) => {
+  // Get the passed params
+
+  const { clientId, factureId } = route.params || {};
+  const [refreshKey, setRefreshKey] = useState(Date.now());
+  useEffect(() => {
+    setRefreshKey(Date.now());
+  }, [factureId, clientId]);
+  const [refreshCount, setRefreshCount] = useState(0);
   return (
     <FactureTopTabs.Navigator
       screenOptions={{
@@ -58,8 +73,17 @@ const NouvelleFactureTabs = () => {
       }}
     >
 
-      <FactureTopTabs.Screen name="EDITION" component={Nouvellefacture} />
-      <FactureTopTabs.Screen name={"apperçu".toUpperCase()} component={AppercuModelFacture} />
+      <FactureTopTabs.Screen name="EDITION"
+        component={Nouvellefacture}
+        initialParams={{ clientId: clientId, factureId: factureId }} />
+
+      <FactureTopTabs.Screen name={"APERÇU"}
+        component={AppercuModelFacture}
+        initialParams={{ factureId: factureId, refreshKey: refreshCount }}
+        listeners={{
+          tabPress: () => setRefreshCount(prev => prev + 1)
+        }}
+      />
     </FactureTopTabs.Navigator>
   );
 };
@@ -96,6 +120,7 @@ const HomeTabs = createBottomTabNavigator({
     Nouveau: {
       screen: NouvelleFactureTabs,
       options: {
+
         header: ({ navigation, route }) => (
           <SafeAreaView>
             <FactureCreationHeader title="Facture"
@@ -121,8 +146,52 @@ const HomeTabs = createBottomTabNavigator({
   },
 });
 
+const Stack = createNativeStackNavigator();
+const ClientsStackScreen = () => {
+  return (
+    <Stack.Navigator screenOptions={
+      {
+
+        headerShown: false,
+        headerStyle: {
+          backgroundColor: '#00E5E5',
+        },
+        headerTintColor: 'black',
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+      }
+    }>
+      <Stack.Screen
+
+        name="Clients" component={ClientsScreen} />
+      <Stack.Screen name="ClientDetail" component={ClientDetailScreen} />
+    </Stack.Navigator>
+  );
+}
 const RootStack = createNativeStackNavigator({
   screens: {
+    Login: {
+      screen: Login,
+      options: {
+        headerShown: false,
+        title: 'Login',
+      },
+    },
+    CreateAccount: {
+      screen: CreateAccount,
+      options: {
+        headerShown: false,
+        title: 'CreateAccount',
+      },
+    },
+    CreateHome: {
+      screen: CreateHome,
+      options: {
+        headerShown: false,
+        title: 'CreateHome',
+      },
+    },
     Home: {
       screen: Home,
       options: {
@@ -152,28 +221,14 @@ const RootStack = createNativeStackNavigator({
 
       },
     },
-    Profile: {
-      screen: Profile,
-      linking: {
-        path: ':user(@[a-zA-Z0-9-_]+)',
-        parse: {
-          user: (value) => value.replace(/^@/, ''),
-        },
-        stringify: {
-          user: (value) => `@${value}`,
-        },
+
+
+    ClientsStack: {
+      screen: ClientsStackScreen,
+      options: {
+        headerShown: false,
+        title: 'Clients',
       },
-    },
-    Settings: {
-      screen: Settings,
-      options: ({ navigation }) => ({
-        presentation: 'modal',
-        headerRight: () => (
-          <HeaderButton onPress={navigation.goBack}>
-            <Text>Close</Text>
-          </HeaderButton>
-        ),
-      }),
     },
     NotFound: {
       screen: NotFound,
