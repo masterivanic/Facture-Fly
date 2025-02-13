@@ -171,20 +171,7 @@ const ClientsStackScreen = () => {
 }
 const RootStack = createNativeStackNavigator({
   screens: {
-    Login: {
-      screen: Login,
-      options: {
-        headerShown: false,
-        title: 'Login',
-      },
-    },
-    CreateAccount: {
-      screen: CreateAccount,
-      options: {
-        headerShown: false,
-        title: 'CreateAccount',
-      },
-    },
+    
     CreateHome: {
       screen: CreateHome,
       options: {
@@ -221,35 +208,27 @@ const RootStack = createNativeStackNavigator({
 
       },
     },
+
+    Login: {
+      screen: Login,
+      options: {
+        headerShown: false,
+        title: 'Login',
+      },
+    },
+    CreateAccount: {
+      screen: CreateAccount,
+      options: {
+        headerShown: false,
+        title: 'CreateAccount',
+      },
+    },
     ClientsStack: {
       screen: ClientsStackScreen,
       options: {
         headerShown: false,
         title: 'Clients',
       },
-    },
-    Profile: {
-      screen: Profile,
-      linking: {
-        path: ':user(@[a-zA-Z0-9-_]+)',
-        parse: {
-          user: (value) => value.replace(/^@/, ''),
-        },
-        stringify: {
-          user: (value) => `@${value}`,
-        },
-      },
-    },
-    Settings: {
-      screen: Settings,
-      options: ({ navigation }) => ({
-        presentation: 'modal',
-        headerRight: () => (
-          <HeaderButton onPress={navigation.goBack}>
-            <Text>Close</Text>
-          </HeaderButton>
-        ),
-      }),
     },
     NotFound: {
       screen: NotFound,
