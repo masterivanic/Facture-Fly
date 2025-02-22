@@ -79,7 +79,7 @@ export const register = async (email: string, username: string, password: string
     password,
     password2,
   }
-  console.log(body);
+  console.log('Registration attempt made.');
   const response = await axios.post(`${API_URL}/auth/register/`, body);
   console.log(response.status);
   return response;
