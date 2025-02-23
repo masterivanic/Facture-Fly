@@ -1,8 +1,6 @@
-from decimal import Decimal
 from typing import Any
 from typing import Dict
 
-from django.utils import timezone
 from rest_framework import serializers
 
 from facture.models import Article

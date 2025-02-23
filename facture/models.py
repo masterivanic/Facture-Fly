@@ -47,7 +47,7 @@ class Invoice(models.Model):
     signature = models.CharField(
         _("invoice signature"), max_length=500, null=True, blank=True
     )
-    due_date = models.DateField(_("final date"), null=True, blank=True)
+    due_date = models.DateTimeField(_("final date"), null=True, blank=True)
     is_paid = models.BooleanField(default=True)
     user = models.ForeignKey(
         FlyUser,

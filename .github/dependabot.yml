@@ -6,3 +6,10 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+      target-branch: "feat/backend-fluy"
+      labels:
+        - "pip dependencies"
+
+    open-pull-requests-limit: 5
+    rebase-strategy: "disabled"
+    versioning-strategy: increase-if-necessary

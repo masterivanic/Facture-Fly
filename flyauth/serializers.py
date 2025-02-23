@@ -1,5 +1,11 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth import password_validation
+from django.contrib.auth.forms import SetPasswordForm
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode as uid_decoder
+from django.utils.translation import gettext_lazy as _
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -9,11 +15,9 @@ from flyauth.models import Customer
 from flyauth.models import FlyUser
 from flyauth.models import UserCompany
 
-UserModel = get_user_model()
-
 
 class ObtainTokenSerializer(TokenObtainPairSerializer):
-    username_field = UserModel.EMAIL_FIELD
+    username_field = get_user_model().EMAIL_FIELD
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -47,6 +51,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         password = attrs.get("password")
         password2 = attrs.get("password2")
+        if len(password) < 8:
+            raise serializers.ValidationError(
+                _("Password is too weak, must be at least 8 characters")
+            )
         if password != password2:
             raise serializers.ValidationError(
                 "Password and Confirm Password doesn't match"
@@ -113,6 +121,79 @@ class UserChangePasswordSerializer(serializers.Serializer):
         user.set_password(password)
         user.save()
         return attrs
+
+
+class SendPasswordResetEmailSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=255)
+
+    class Meta:
+        fields = ["email"]
+
+
+class VerificationEmailSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    confirm_number = serializers.CharField()
+
+    def validate(self, attrs):
+        user = FlyUser.objects.get(email=attrs.get("email"), is_confirmed=False)
+        if user:
+            is_verify = user.verify_totp(attrs.get("confirm_number"))
+            if not is_verify:
+                raise serializers.ValidationError(
+                    _("otp code entered is incorrect or expired")
+                )
+            else:
+                user.is_confirmed = True
+                user.save()
+        else:
+            raise serializers.ValidationError(
+                _("user with email {email} dont exist or already confirm")
+            )
+        return attrs
+
+
+class ResendActivationCodeSerializer(SendPasswordResetEmailSerializer):
+    def validate(self, attrs):
+        email = attrs.get("email")
+        try:
+            FlyUser.objects.get(email=email, is_confirmed=False)
+        except FlyUser.DoesNotExist:
+            raise serializers.ValidationError(
+                "User does not exists or is already confirmed"
+            )
+
+        return attrs
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    new_password1 = serializers.CharField(max_length=128)
+    new_password2 = serializers.CharField(max_length=128)
+    uid = serializers.CharField()
+    token = serializers.CharField()
+
+    set_password_form_class = SetPasswordForm
+
+    def validate(self, attrs):
+        self._errors = {}
+
+        try:
+            uid = force_str(uid_decoder(attrs["uid"]))
+            self.user = get_user_model()._default_manager.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, get_user_model().DoesNotExist):
+            raise ValidationError({"uid": ["Invalid value"]})
+
+        self.set_password_form = self.set_password_form_class(
+            user=self.user, data=attrs
+        )
+        if not self.set_password_form.is_valid():
+            raise serializers.ValidationError(self.set_password_form.errors)
+        if not default_token_generator.check_token(self.user, attrs["token"]):
+            raise ValidationError({"token": ["Invalid value"]})
+
+        return attrs
+
+    def save(self):
+        return self.set_password_form.save()
 
 
 class UserCompanySerializer(serializers.ModelSerializer):

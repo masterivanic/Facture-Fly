@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import include
 from django.urls import path
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.views import SpectacularAPIView
 from drf_spectacular.views import SpectacularRedocView
 from drf_spectacular.views import SpectacularSwaggerView
@@ -23,6 +24,6 @@ urlpatterns = [
 ]
 
 
-admin.site.site_header = "Facture Fly admin"
-admin.site.site_title = "Facture Fly Portal"
-admin.site.index_title = "Facture Fly dashboard"
+admin.site.site_header = _("Facture Fly admin")
+admin.site.site_title = _("Facture Fly Portal")
+admin.site.index_title = _("Facture Fly dashboard")
